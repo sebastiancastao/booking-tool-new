@@ -1390,7 +1390,7 @@ export function BookingForm({ config, isPreview = false }: BookingFormProps) {
             className="text-sm font-medium hover:underline"
             style={{ color: config.primaryColor }}
           >
-            I HAVE AN EXISTING BOOKING
+            
           </button>
         </div>
       </div>
