@@ -329,3 +329,58 @@ export async function PUT(request: NextRequest) {
     );
   }
 }
+
+export async function DELETE(request: NextRequest) {
+  try {
+    const { searchParams } = new URL(request.url);
+    let id = searchParams.get("id");
+
+    if (!id) {
+      try {
+        const body = await request.json();
+        id = body?.id;
+      } catch {
+        // Ignore JSON parsing errors when no body is provided.
+      }
+    }
+
+    if (!id) {
+      return NextResponse.json(
+        { error: "Widget ID is required" },
+        { status: 400 }
+      );
+    }
+
+    if (!process.env.NEXT_PUBLIC_SUPABASE_URL) {
+      return NextResponse.json({
+        success: true,
+        message: "Widget deleted (demo mode)",
+        id,
+      });
+    }
+
+    const supabase = await createClient();
+
+    const { error } = await supabase.from("widgets").delete().eq("id", id);
+
+    if (error) {
+      console.error("Supabase error deleting widget:", error);
+      return NextResponse.json(
+        { error: "Failed to delete widget" },
+        { status: 500 }
+      );
+    }
+
+    return NextResponse.json({
+      success: true,
+      message: "Widget deleted successfully",
+      id,
+    });
+  } catch (error) {
+    console.error("API error:", error);
+    return NextResponse.json(
+      { error: "Internal server error" },
+      { status: 500 }
+    );
+  }
+}

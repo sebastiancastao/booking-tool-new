@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -246,6 +246,7 @@ export function BookingForm({ config, isPreview = false }: BookingFormProps) {
   const [showProtectionPage, setShowProtectionPage] = useState(false);
   const [showReviewPage, setShowReviewPage] = useState(false);
   const [showNextStepsPage, setShowNextStepsPage] = useState(false);
+  const confirmationSentRef = useRef(false);
   const [originQuery, setOriginQuery] = useState("");
   const [originSuggestions, setOriginSuggestions] = useState<OriginSuggestion[]>([]);
   const [originSuggestionsLoading, setOriginSuggestionsLoading] = useState(false);
@@ -283,6 +284,7 @@ export function BookingForm({ config, isPreview = false }: BookingFormProps) {
     trigger,
     watch,
     setValue,
+    getValues,
   } = useForm<BookingFormData>({
     resolver: zodResolver(bookingSchema),
     defaultValues: {
@@ -623,18 +625,18 @@ export function BookingForm({ config, isPreview = false }: BookingFormProps) {
     return "100%";
   };
 
-  const nextStep = async () => {
-    const fieldsToValidate = getFieldsForStep(currentStep);
-    const isValid = await trigger(fieldsToValidate as (keyof BookingFormData)[]);
-    if (!isValid) {
-      return;
-    }
-    if (currentStep === 0) {
-      setShowNextStepsPage(true);
-      return;
-    }
-    if (currentStep < STEPS.length - 1) {
-      setCurrentStep(currentStep + 1);
+    const nextStep = async () => {
+      const fieldsToValidate = getFieldsForStep(currentStep);
+      const isValid = await trigger(fieldsToValidate as (keyof BookingFormData)[]);
+      if (!isValid) {
+        return;
+      }
+      if (currentStep === 0) {
+        setShowNextStepsPage(true);
+        return;
+      }
+      if (currentStep < STEPS.length - 1) {
+        setCurrentStep(currentStep + 1);
     }
   };
 
@@ -1057,16 +1059,84 @@ export function BookingForm({ config, isPreview = false }: BookingFormProps) {
     setShowNextStepsPage(false);
   };
 
-  const handleReviewContinue = () => {
-    setShowReviewPage(false);
-    setShowNextStepsPage(false);
-    setCurrentStep(0);
-  };
+    const handleReviewContinue = () => {
+      setShowReviewPage(false);
+      setShowNextStepsPage(false);
+      setCurrentStep(0);
+    };
 
-  const handleNextStepsContinue = () => {
-    setShowNextStepsPage(false);
-    setCurrentStep(1);
-  };
+    const handleConfirmReservation = async () => {
+    if (confirmationSentRef.current) {
+      setIsSubmitted(true);
+      return;
+    }
+
+    confirmationSentRef.current = true;
+
+    const formValues = getValues();
+    const payload = {
+      widgetId: config.id,
+      widgetName: config.name,
+      companyName: config.companyName,
+      summary: {
+        contactName,
+        contactSummaryLine,
+        routeSummary,
+        moveDateSummary,
+        team: selectedTeamOption.title,
+        estimateLabel,
+      },
+      selections: {
+        serviceType,
+        laborHelpType,
+        moveType,
+        homeSize,
+        storageUnitSize,
+        officeHeadcount,
+        teamOption,
+      },
+      form: formValues,
+      extras: {
+        inventory,
+        specialItems,
+        customFieldValues,
+      },
+      estimate: {
+        minLaborHours: estimateLaborRange.minLabor,
+        maxLaborHours: estimateLaborRange.maxLabor,
+        hourlyRate: selectedTeamOption.rate,
+        travelHours,
+        distanceMiles,
+        travelRate: pricingConfig.travelRate,
+        pricePerMile: pricingConfig.pricePerMile,
+        accessibilityCost,
+        protectionCost,
+        minLaborCost,
+        maxLaborCost,
+        travelCost,
+        distanceCost,
+        estimateMinTotal,
+        estimateMaxTotal,
+      },
+      createdAt: new Date().toISOString(),
+    };
+
+    try {
+      const response = await fetch("/api/confirm", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to send confirmation email");
+      }
+      } catch (error) {
+        console.error("Confirmation email failed:", error);
+      }
+
+      setIsSubmitted(true);
+    };
 
   const openStoragePage = () => {
     setStoragePageWasEnabled(storageNeeded ?? false);
@@ -2502,19 +2572,10 @@ export function BookingForm({ config, isPreview = false }: BookingFormProps) {
             </div>
           </div>
 
-          <button
-            type="button"
-            className="w-full flex items-center justify-between border-t pt-4 text-sm text-gray-700"
-          >
-            <span>I have a promo code</span>
-            <span className="text-xs" style={{ color: config.primaryColor }}>
-              Enter it here
-            </span>
-          </button>
+          </div>
         </div>
-      </div>
-    );
-  }
+      );
+    }
 
   // Page 15: Next Steps
   if (showNextStepsPage) {
@@ -2541,41 +2602,15 @@ export function BookingForm({ config, isPreview = false }: BookingFormProps) {
           </div>
 
           <div className="px-4 py-4 space-y-4">
-            <div className="rounded-md bg-amber-50 border border-amber-100 text-amber-900 text-xs px-3 py-2">
-              <span className="font-semibold">What's next.</span> Complete the following
-              step(s) to confirm your reservation
-            </div>
-
-            <button
-              type="button"
-              onClick={handleNextStepsContinue}
-              className="w-full flex items-start justify-between gap-3 py-3 border-b border-gray-100 text-left"
-            >
-              <div className="flex items-start gap-3">
-                <div className="w-6 h-6 rounded-full bg-amber-100 flex items-center justify-center mt-0.5">
-                  <AlertCircle className="w-3.5 h-3.5 text-amber-500" />
+              <div className="space-y-3 text-sm">
+                <div className="rounded-md bg-amber-50 border border-amber-100 text-amber-900 text-xs px-3 py-2">
+                  <span className="font-semibold">Almost done.</span> Review your reservation and confirm.
                 </div>
-                <div>
-                  <div className="text-sm font-medium text-gray-900">
-                    Add a payment method
-                  </div>
-                  <div className="text-xs text-gray-500">
-                    To confirm your move request on our schedule, add your credit /
-                    debit card information.
-                  </div>
-                  <div className="text-xs text-gray-400 mt-1">
-                    You will NOT be billed yet
-                  </div>
-                </div>
-              </div>
-              <ChevronRight className="w-4 h-4 text-gray-300 mt-1" />
-            </button>
 
-            <div className="space-y-3 text-sm">
-              <div className="border-b border-gray-100 pb-3">
-                <div className="font-medium text-gray-900">{contactName}</div>
-                <div className="text-xs text-gray-500">{contactSummaryLine}</div>
-              </div>
+                <div className="border-b border-gray-100 pb-3">
+                  <div className="font-medium text-gray-900">{contactName}</div>
+                  <div className="text-xs text-gray-500">{contactSummaryLine}</div>
+                </div>
 
               <div className="border-b border-gray-100 pb-3 text-sm text-gray-700">
                 {routeSummary}
@@ -2587,50 +2622,34 @@ export function BookingForm({ config, isPreview = false }: BookingFormProps) {
                 <div className="text-xs text-gray-500">{selectedTeamOption.title}</div>
               </div>
 
-              <div className="border-b border-gray-100 pb-3">
-                <div className="text-xs text-gray-500">Estimate</div>
-                <div className="font-medium text-gray-900">{estimateLabel}</div>
-                <div className="text-xs text-gray-500 mt-1 flex flex-wrap gap-2">
-                  <span>{laborLabel}</span>
-                  {travelLabel && <span>+ {travelLabel}</span>}
-                  {distanceLabel && <span>({distanceLabel})</span>}
-                  {accessibilityLabel && <span>{accessibilityLabel}</span>}
-                  {distanceLoading && <span className="animate-pulse">calculating route...</span>}
+                <div className="border-b border-gray-100 pb-3">
+                  <div className="text-xs text-gray-500">Estimate</div>
+                  <div className="font-medium text-gray-900">{estimateLabel}</div>
+                  <div className="text-xs text-gray-500 mt-1">
+                    how the estimate is calculated
+                  </div>
+                  <div className="text-xs text-gray-500 mt-1 flex flex-wrap gap-2">
+                    <span>{laborLabel}</span>
+                    {travelLabel && <span>+ {travelLabel}</span>}
+                    {distanceLabel && <span>({distanceLabel})</span>}
+                    {accessibilityLabel && <span>{accessibilityLabel}</span>}
+                    {distanceLoading && <span className="animate-pulse">calculating route...</span>}
+                  </div>
                 </div>
               </div>
 
-              <button
+              <Button
                 type="button"
-                className="w-full flex items-center justify-between border-b border-gray-100 pb-3 text-left"
+                onClick={handleConfirmReservation}
+                style={{ backgroundColor: config.primaryColor }}
+                className="w-full text-white hover:opacity-90"
               >
-                <div>
-                  <div className="font-medium text-gray-900">My inventory</div>
-                  <div className="text-xs text-gray-500">
-                    Manage an inventory of what you want to move
-                  </div>
-                </div>
-                <ChevronRight className="w-4 h-4 text-gray-300" />
-              </button>
-
-              <button
-                type="button"
-                className="w-full flex items-center justify-between border-b border-gray-100 pb-3 text-left"
-              >
-                <div>
-                  <div className="font-medium text-gray-900">Notes</div>
-                  <div className="text-xs text-gray-500">
-                    Is there anything you will like us to know about your upcoming move?
-                  </div>
-                </div>
-                <span className="text-xs font-semibold" style={{ color: config.primaryColor }}>
-                  ADD
-                </span>
-              </button>
+                CONFIRM
+              </Button>
             </div>
           </div>
         </div>
-      </div>
-    );
+      );
   }
 
   // Main Form with Steps
