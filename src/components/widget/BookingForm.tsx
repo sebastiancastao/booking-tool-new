@@ -79,7 +79,7 @@ const bookingSchema = z.object({
   additionalNotes: z.string().optional(),
 });
 
-type BookingFormData = z.infer<typeof bookingSchema>;
+type BookingFormData = z.input<typeof bookingSchema>;
 
 interface BookingFormProps {
   config: WidgetConfig;
