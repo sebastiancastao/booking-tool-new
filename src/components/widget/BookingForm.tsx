@@ -1069,7 +1069,7 @@ export function BookingForm({ config, isPreview = false }: BookingFormProps) {
   };
 
   const openStoragePage = () => {
-    setStoragePageWasEnabled(storageNeeded);
+    setStoragePageWasEnabled(storageNeeded ?? false);
     setStorageMoveOutDate(storageMoveOutValue || "");
     setStoragePlan(storageDurationValue || "1_week");
     setShowStoragePage(true);
