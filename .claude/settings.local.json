@@ -5,7 +5,9 @@
       "Bash(npm install:*)",
       "Bash(npm run build:*)",
       "Bash(timeout 15 npm run dev:*)",
-      "Bash(npx tsc:*)"
+      "Bash(npx tsc:*)",
+      "Bash(dir /s /b \"c:\\\\Users\\\\sebas\\\\OneDrive\\\\Escritorio\\\\booking.tool.new\\\\src\\\\components\")",
+      "Bash(findstr:*)"
     ]
   }
 }

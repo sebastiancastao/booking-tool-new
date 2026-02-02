@@ -1,6 +1,57 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 
+// Helper function to upsert contact and return contact_id
+async function upsertContact(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  widgetId: string,
+  firstName: string,
+  lastName: string,
+  email: string,
+  phone: string
+): Promise<string | null> {
+  // Check if contact exists
+  const { data: existingContact } = await supabase
+    .from("contacts")
+    .select("id")
+    .eq("widget_id", widgetId)
+    .eq("email", email)
+    .single();
+
+  if (existingContact) {
+    // Update existing contact
+    await supabase
+      .from("contacts")
+      .update({
+        first_name: firstName,
+        last_name: lastName,
+        phone: phone,
+      })
+      .eq("id", existingContact.id);
+    return existingContact.id;
+  } else {
+    // Create new contact
+    const { data: newContact, error } = await supabase
+      .from("contacts")
+      .insert({
+        widget_id: widgetId,
+        first_name: firstName,
+        last_name: lastName,
+        email: email,
+        phone: phone,
+        source: "booking_form",
+      })
+      .select("id")
+      .single();
+
+    if (error) {
+      console.error("Error creating contact:", error);
+      return null;
+    }
+    return newContact?.id || null;
+  }
+}
+
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
@@ -42,8 +93,19 @@ export async function POST(request: NextRequest) {
 
     const supabase = await createClient();
 
+    // First, upsert the contact to get contact_id
+    const contactId = await upsertContact(
+      supabase,
+      body.widgetId,
+      body.firstName,
+      body.lastName,
+      body.email,
+      body.phone
+    );
+
     const { data, error } = await supabase.from("bookings").insert({
       widget_id: body.widgetId,
+      contact_id: contactId,
       first_name: body.firstName,
       last_name: body.lastName,
       email: body.email,

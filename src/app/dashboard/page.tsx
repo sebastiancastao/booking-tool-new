@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { WidgetsList } from "@/components/dashboard/WidgetsList";
 import { Button } from "@/components/ui/button";
-import { Truck, Plus } from "lucide-react";
+import { Truck, Plus, Users } from "lucide-react";
 import Link from "next/link";
 import type { WidgetConfig } from "@/types";
 import { DEFAULT_PRICING_CONFIG } from "@/types";
@@ -138,12 +138,20 @@ export default function DashboardPage() {
                 <p className="text-sm text-gray-700">Manage your booking widgets</p>
               </div>
             </div>
-            <Link href="/dashboard/create">
-              <Button>
-                <Plus className="w-4 h-4 mr-2" />
-                Create Widget
-              </Button>
-            </Link>
+            <div className="flex items-center gap-3">
+              <Link href="/dashboard/contacts">
+                <Button variant="outline">
+                  <Users className="w-4 h-4 mr-2" />
+                  Contacts
+                </Button>
+              </Link>
+              <Link href="/dashboard/create">
+                <Button>
+                  <Plus className="w-4 h-4 mr-2" />
+                  Create Widget
+                </Button>
+              </Link>
+            </div>
           </div>
         </div>
       </header>

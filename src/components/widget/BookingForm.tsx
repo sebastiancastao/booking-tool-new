@@ -234,7 +234,7 @@ export function BookingForm({ config, isPreview = false }: BookingFormProps) {
   const [inventory, setInventory] = useState<InventoryItem[]>([]);
   const [specialItems, setSpecialItems] = useState<SpecialItem[]>([]);
   const [customFieldValues, setCustomFieldValues] = useState<Record<string, string | boolean>>({});
-  const [showMoveDatePage, setShowMoveDatePage] = useState(true);
+  const [showMoveDatePage, setShowMoveDatePage] = useState(false);
   const [showMoveTimePage, setShowMoveTimePage] = useState(false);
   const [showOriginPage, setShowOriginPage] = useState(false);
   const [showOriginDetails, setShowOriginDetails] = useState(false);
@@ -246,6 +246,7 @@ export function BookingForm({ config, isPreview = false }: BookingFormProps) {
   const [showProtectionPage, setShowProtectionPage] = useState(false);
   const [showReviewPage, setShowReviewPage] = useState(false);
   const [showNextStepsPage, setShowNextStepsPage] = useState(false);
+  const [showContactPage, setShowContactPage] = useState(false);
   const confirmationSentRef = useRef(false);
   const [originQuery, setOriginQuery] = useState("");
   const [originSuggestions, setOriginSuggestions] = useState<OriginSuggestion[]>([]);
@@ -608,9 +609,9 @@ export function BookingForm({ config, isPreview = false }: BookingFormProps) {
   const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
 
   // Calculate progress for the progress bar across all pages.
-  // Total steps: ~12 pages for a typical flow
+  // Total steps: ~13 pages for a typical flow (contact moved to step 4)
   const getProgressWidth = () => {
-    const totalSteps = 12;
+    const totalSteps = 13;
 
     // Step 1: Service Selection
     if (!serviceType) return "0%";
@@ -624,37 +625,40 @@ export function BookingForm({ config, isPreview = false }: BookingFormProps) {
     if (moveType === "storage" && !storageUnitSize) return `${Math.round((2 / totalSteps) * 100)}%`;
     if (moveType === "office" && !officeHeadcount) return `${Math.round((2 / totalSteps) * 100)}%`;
 
-    // Step 4: Move Date
-    if (showMoveDatePage && !showMoveTimePage && !showOriginPage) return `${Math.round((3 / totalSteps) * 100)}%`;
+    // Step 4: Contact Info (moved earlier)
+    if (showContactPage) return `${Math.round((3 / totalSteps) * 100)}%`;
 
-    // Step 5: Move Time
-    if (showMoveTimePage && !showOriginPage) return `${Math.round((4 / totalSteps) * 100)}%`;
+    // Step 5: Move Date
+    if (showMoveDatePage && !showMoveTimePage && !showOriginPage) return `${Math.round((4 / totalSteps) * 100)}%`;
 
-    // Step 6: Origin Location
-    if (showOriginPage && !showOriginDetails) return `${Math.round((5 / totalSteps) * 100)}%`;
+    // Step 6: Move Time
+    if (showMoveTimePage && !showOriginPage) return `${Math.round((5 / totalSteps) * 100)}%`;
 
-    // Step 7: Origin Details
-    if (showOriginDetails && !showDestinationPage) return `${Math.round((6 / totalSteps) * 100)}%`;
+    // Step 7: Origin Location
+    if (showOriginPage && !showOriginDetails) return `${Math.round((6 / totalSteps) * 100)}%`;
 
-    // Step 8: Destination Location
-    if (showDestinationPage && !showDestinationDetails) return `${Math.round((7 / totalSteps) * 100)}%`;
+    // Step 8: Origin Details
+    if (showOriginDetails && !showDestinationPage) return `${Math.round((7 / totalSteps) * 100)}%`;
 
-    // Step 9: Destination Details
-    if (showDestinationDetails && !showTeamPage) return `${Math.round((8 / totalSteps) * 100)}%`;
+    // Step 9: Destination Location
+    if (showDestinationPage && !showDestinationDetails) return `${Math.round((8 / totalSteps) * 100)}%`;
 
-    // Step 10: Team Selection
-    if (showTeamPage && !showServicesPage) return `${Math.round((9 / totalSteps) * 100)}%`;
+    // Step 10: Destination Details
+    if (showDestinationDetails && !showTeamPage) return `${Math.round((9 / totalSteps) * 100)}%`;
 
-    // Step 11: Services
-    if (showServicesPage && !showReviewPage) return `${Math.round((10 / totalSteps) * 100)}%`;
+    // Step 11: Team Selection
+    if (showTeamPage && !showServicesPage) return `${Math.round((10 / totalSteps) * 100)}%`;
 
-    // Step 12: Review
-    if (showReviewPage && !showNextStepsPage) return `${Math.round((11 / totalSteps) * 100)}%`;
+    // Step 12: Services
+    if (showServicesPage && !showReviewPage) return `${Math.round((11 / totalSteps) * 100)}%`;
 
-    // Final step: Contact Info
+    // Step 13: Review
+    if (showReviewPage && !showNextStepsPage) return `${Math.round((12 / totalSteps) * 100)}%`;
+
+    // Final step: Confirmation
     if (showNextStepsPage) return "100%";
 
-    return `${Math.round((3 / totalSteps) * 100)}%`;
+    return `${Math.round((4 / totalSteps) * 100)}%`;
   };
 
     const nextStep = async () => {
@@ -717,6 +721,11 @@ export function BookingForm({ config, isPreview = false }: BookingFormProps) {
     setShowProtectionPage(false);
     setShowReviewPage(false);
     setShowNextStepsPage(false);
+  };
+
+  const goBackToContact = () => {
+    setShowMoveDatePage(false);
+    setShowContactPage(true);
   };
 
   const goBackToMoveType = () => {
@@ -1032,7 +1041,8 @@ export function BookingForm({ config, isPreview = false }: BookingFormProps) {
 
   const handleStorageUnitSelect = (value: StorageUnitSize) => {
     setStorageUnitSize(value);
-    setShowMoveDatePage(true);
+    setShowContactPage(true);
+    setShowMoveDatePage(false);
     setShowMoveTimePage(false);
     setShowOriginPage(false);
     setShowOriginDetails(false);
@@ -1049,7 +1059,8 @@ export function BookingForm({ config, isPreview = false }: BookingFormProps) {
 
   const handleOfficeHeadcountSelect = (value: OfficeHeadcount) => {
     setOfficeHeadcount(value);
-    setShowMoveDatePage(true);
+    setShowContactPage(true);
+    setShowMoveDatePage(false);
     setShowMoveTimePage(false);
     setShowOriginPage(false);
     setShowOriginDetails(false);
@@ -1062,6 +1073,47 @@ export function BookingForm({ config, isPreview = false }: BookingFormProps) {
     setShowProtectionPage(false);
     setShowReviewPage(false);
     setShowNextStepsPage(false);
+  };
+
+  const goBackToSizeSelection = () => {
+    setShowContactPage(false);
+    // Reset size selections so user can re-select
+    if (moveType === "home") {
+      setHomeSize(null);
+    } else if (moveType === "storage") {
+      setStorageUnitSize(null);
+    } else if (moveType === "office") {
+      setOfficeHeadcount(null);
+    }
+  };
+
+  const handleContactContinue = async () => {
+    // Validate contact fields before continuing
+    const isValid = await trigger(["firstName", "lastName", "email", "phone"]);
+    if (!isValid) return;
+
+    // Save contact info to database
+    try {
+      const contactData = {
+        widgetId: config.id,
+        firstName: watch("firstName"),
+        lastName: watch("lastName"),
+        email: watch("email"),
+        phone: watch("phone"),
+      };
+
+      await fetch("/api/contacts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(contactData),
+      });
+    } catch (error) {
+      console.error("Error saving contact:", error);
+      // Continue anyway - don't block the user flow
+    }
+
+    setShowContactPage(false);
+    setShowMoveDatePage(true);
   };
 
   const goBackToUnloadingHours = () => {
@@ -1601,7 +1653,7 @@ export function BookingForm({ config, isPreview = false }: BookingFormProps) {
             <button
               key={size.id}
               type="button"
-              onClick={() => setHomeSize(size.id as HomeSize)}
+              onClick={() => { setHomeSize(size.id as HomeSize); setShowContactPage(true); }}
               className="w-full flex items-center justify-between py-4 px-2 border-b border-gray-100 hover:bg-gray-50 transition-colors text-left group"
             >
               <span className="text-gray-900">{size.label}</span>
@@ -1718,7 +1770,115 @@ export function BookingForm({ config, isPreview = false }: BookingFormProps) {
     );
   }
 
-  // Page 6: Move Date Selection
+  // Page 6: Contact Information (moved earlier in flow)
+  if (showContactPage) {
+    return (
+      <div className="py-4">
+        {/* Header with back button and progress */}
+        <div className="flex items-center justify-between mb-2">
+          <button
+            type="button"
+            onClick={goBackToSizeSelection}
+            className="p-1 hover:bg-gray-100 rounded"
+          >
+            <ChevronLeft className="w-5 h-5 text-gray-500" />
+          </button>
+          <div className="flex-1 mx-4">
+            <div className="h-2 bg-gray-200 rounded-full overflow-hidden shadow-inner">
+              <div
+                className="h-2 rounded-full transition-all duration-1000 ease-out"
+                style={{
+                  width: getProgressWidth(),
+                  background: `linear-gradient(90deg, ${config.primaryColor}, ${config.secondaryColor})`,
+                  boxShadow: `0 0 10px ${config.primaryColor}50`
+                }}
+              />
+            </div>
+          </div>
+          <button type="button" className="p-1 hover:bg-gray-100 rounded">
+            <X className="w-5 h-5 text-gray-400" />
+          </button>
+        </div>
+
+        {/* Question */}
+        <h2 className="text-xl text-gray-700 mt-8 mb-6">Please give us your contact info</h2>
+
+        {/* Contact Form */}
+        <div className="space-y-6">
+          <div>
+            <Label className="text-xs font-medium" style={{ color: config.primaryColor }}>
+              First name
+            </Label>
+            <Input
+              {...register("firstName")}
+              className="mt-2 border-0 border-b border-gray-200 rounded-none px-0 focus:ring-0 focus:border-transparent"
+              style={{ borderBottomColor: config.primaryColor }}
+              error={!!errors.firstName}
+            />
+            {errors.firstName && (
+              <p className="text-red-500 text-xs mt-1">{errors.firstName.message}</p>
+            )}
+          </div>
+          <div>
+            <Label className="text-sm font-normal text-gray-700">Last name</Label>
+            <Input
+              {...register("lastName")}
+              className="mt-2 border-0 border-b border-gray-200 rounded-none px-0 focus:ring-0 focus:border-transparent"
+              error={!!errors.lastName}
+            />
+            {errors.lastName && (
+              <p className="text-red-500 text-xs mt-1">{errors.lastName.message}</p>
+            )}
+          </div>
+          <div>
+            <Label className="text-sm font-normal text-gray-700">Email</Label>
+            <Input
+              {...register("email")}
+              type="email"
+              className="mt-2 border-0 border-b border-gray-200 rounded-none px-0 focus:ring-0 focus:border-transparent"
+              error={!!errors.email}
+            />
+            {errors.email && (
+              <p className="text-red-500 text-xs mt-1">{errors.email.message}</p>
+            )}
+          </div>
+          <div>
+            <Label className="text-sm font-normal text-gray-700">Phone</Label>
+            <div className="mt-2 flex items-center gap-3 border-b border-gray-200 pb-2">
+              <button
+                type="button"
+                className="flex items-center gap-1 text-sm text-gray-700"
+              >
+                <span className="text-xs">US</span>
+                <span>+1</span>
+                <ChevronDown className="w-3 h-3 text-gray-400" />
+              </button>
+              <Input
+                {...register("phone")}
+                type="tel"
+                className="border-0 rounded-none px-0 py-0 h-8 focus:ring-0 focus:border-transparent"
+                error={!!errors.phone}
+              />
+            </div>
+            {errors.phone && (
+              <p className="text-red-500 text-xs mt-1">{errors.phone.message}</p>
+            )}
+          </div>
+        </div>
+
+        <Button
+          type="button"
+          onClick={handleContactContinue}
+          style={{ backgroundColor: config.primaryColor }}
+          className="w-full text-white hover:opacity-90 mt-10"
+        >
+          Continue
+        </Button>
+      </div>
+    );
+  }
+
+  // Page 7: Move Date Selection
   if (showMoveDatePage) {
     return (
       <div className="py-4">
@@ -1726,7 +1886,7 @@ export function BookingForm({ config, isPreview = false }: BookingFormProps) {
         <div className="flex items-center justify-between mb-2">
           <button
             type="button"
-            onClick={goBackToMoveSelection}
+            onClick={goBackToContact}
             className="p-1 hover:bg-gray-100 rounded"
           >
             <ChevronLeft className="w-5 h-5 text-gray-500" />

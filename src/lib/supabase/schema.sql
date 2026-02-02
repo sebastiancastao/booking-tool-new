@@ -25,13 +25,38 @@ CREATE TABLE widgets (
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
+-- Contacts table (separate CRM table for customer management)
+CREATE TABLE contacts (
+  id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+  widget_id UUID REFERENCES widgets(id) ON DELETE CASCADE,
+
+  -- Contact Information
+  first_name VARCHAR(100) NOT NULL,
+  last_name VARCHAR(100) NOT NULL,
+  email VARCHAR(255) NOT NULL,
+  phone VARCHAR(50) NOT NULL,
+
+  -- Optional additional info
+  preferred_contact_method VARCHAR(20) DEFAULT 'email',
+  notes TEXT,
+
+  -- Metadata
+  source VARCHAR(50) DEFAULT 'booking_form',
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+
+  -- Prevent duplicate contacts per widget
+  UNIQUE(widget_id, email)
+);
+
 -- Bookings table
 CREATE TABLE bookings (
   id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
   widget_id UUID REFERENCES widgets(id) ON DELETE CASCADE,
+  contact_id UUID REFERENCES contacts(id) ON DELETE SET NULL,
   status VARCHAR(20) DEFAULT 'pending',
 
-  -- Contact Information
+  -- Contact Information (kept for convenience, but linked via contact_id)
   first_name VARCHAR(100) NOT NULL,
   last_name VARCHAR(100) NOT NULL,
   email VARCHAR(255) NOT NULL,
@@ -94,13 +119,17 @@ CREATE TABLE bookings (
 
 -- Create indexes for better query performance
 CREATE INDEX idx_widgets_user_id ON widgets(user_id);
+CREATE INDEX idx_contacts_widget_id ON contacts(widget_id);
+CREATE INDEX idx_contacts_email ON contacts(email);
 CREATE INDEX idx_bookings_widget_id ON bookings(widget_id);
+CREATE INDEX idx_bookings_contact_id ON bookings(contact_id);
 CREATE INDEX idx_bookings_status ON bookings(status);
 CREATE INDEX idx_bookings_move_date ON bookings(move_date);
 CREATE INDEX idx_bookings_created_at ON bookings(created_at);
 
 -- Row Level Security (RLS) Policies
 ALTER TABLE widgets ENABLE ROW LEVEL SECURITY;
+ALTER TABLE contacts ENABLE ROW LEVEL SECURITY;
 ALTER TABLE bookings ENABLE ROW LEVEL SECURITY;
 
 -- Widgets policies
@@ -124,6 +153,23 @@ CREATE POLICY "Users can delete their own widgets"
 CREATE POLICY "Public can view widgets by ID"
   ON widgets FOR SELECT
   USING (true);
+
+-- Contacts policies
+CREATE POLICY "Users can view contacts for their widgets"
+  ON contacts FOR SELECT
+  USING (widget_id IN (SELECT id FROM widgets WHERE user_id = auth.uid()));
+
+CREATE POLICY "Anyone can create contacts"
+  ON contacts FOR INSERT
+  WITH CHECK (true);
+
+CREATE POLICY "Users can update contacts for their widgets"
+  ON contacts FOR UPDATE
+  USING (widget_id IN (SELECT id FROM widgets WHERE user_id = auth.uid()));
+
+CREATE POLICY "Users can delete contacts for their widgets"
+  ON contacts FOR DELETE
+  USING (widget_id IN (SELECT id FROM widgets WHERE user_id = auth.uid()));
 
 -- Bookings policies
 CREATE POLICY "Users can view bookings for their widgets"
@@ -160,6 +206,11 @@ $$ LANGUAGE plpgsql;
 -- Triggers for updated_at
 CREATE TRIGGER update_widgets_updated_at
   BEFORE UPDATE ON widgets
+  FOR EACH ROW
+  EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_contacts_updated_at
+  BEFORE UPDATE ON contacts
   FOR EACH ROW
   EXECUTE FUNCTION update_updated_at_column();
 
