@@ -65,8 +65,8 @@ export function WidgetsList({ widgets, onDelete }: WidgetsListProps) {
                 <CardContent className="p-4">
                   <div className="flex items-start justify-between">
                     <div>
-                      <h3 className="font-medium">{widget.name}</h3>
-                      <p className="text-sm text-gray-500">{widget.companyName}</p>
+                      <h3 className="font-medium text-gray-900">{widget.name}</h3>
+                      <p className="text-sm text-gray-700">{widget.companyName}</p>
                     </div>
                     <div className="flex items-center gap-1">
                       <Button
@@ -102,7 +102,7 @@ export function WidgetsList({ widgets, onDelete }: WidgetsListProps) {
                   </div>
 
                   <div className="mt-4 pt-4 border-t flex items-center justify-between">
-                    <span className="text-xs text-gray-500">
+                    <span className="text-xs text-gray-600">
                       Created {new Date(widget.createdAt).toLocaleDateString()}
                     </span>
                     <div className="flex items-center gap-2">

@@ -607,22 +607,54 @@ export function BookingForm({ config, isPreview = false }: BookingFormProps) {
   const today = new Date();
   const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
 
-  // Calculate progress for the progress bar on the intro pages.
+  // Calculate progress for the progress bar across all pages.
+  // Total steps: ~12 pages for a typical flow
   const getProgressWidth = () => {
+    const totalSteps = 12;
+
+    // Step 1: Service Selection
     if (!serviceType) return "0%";
-    if (serviceType === "labor_only") {
-      if (!laborHelpType) return "33%";
-      if (!moveType) return "66%";
-      if (moveType === "home" && !homeSize) return "66%";
-      if (moveType === "storage" && !storageUnitSize) return "66%";
-      if (moveType === "office" && !officeHeadcount) return "66%";
-      return "100%";
-    }
-    if (!moveType) return "33%";
-    if (moveType === "home" && !homeSize) return "66%";
-    if (moveType === "storage" && !storageUnitSize) return "66%";
-    if (moveType === "office" && !officeHeadcount) return "66%";
-    return "100%";
+
+    // Step 2: Labor Help (labor only) or Move Type
+    if (serviceType === "labor_only" && !laborHelpType) return `${Math.round((1 / totalSteps) * 100)}%`;
+    if (!moveType) return `${Math.round((1 / totalSteps) * 100)}%`;
+
+    // Step 3: Size selection (home/storage/office)
+    if (moveType === "home" && !homeSize) return `${Math.round((2 / totalSteps) * 100)}%`;
+    if (moveType === "storage" && !storageUnitSize) return `${Math.round((2 / totalSteps) * 100)}%`;
+    if (moveType === "office" && !officeHeadcount) return `${Math.round((2 / totalSteps) * 100)}%`;
+
+    // Step 4: Move Date
+    if (showMoveDatePage && !showMoveTimePage && !showOriginPage) return `${Math.round((3 / totalSteps) * 100)}%`;
+
+    // Step 5: Move Time
+    if (showMoveTimePage && !showOriginPage) return `${Math.round((4 / totalSteps) * 100)}%`;
+
+    // Step 6: Origin Location
+    if (showOriginPage && !showOriginDetails) return `${Math.round((5 / totalSteps) * 100)}%`;
+
+    // Step 7: Origin Details
+    if (showOriginDetails && !showDestinationPage) return `${Math.round((6 / totalSteps) * 100)}%`;
+
+    // Step 8: Destination Location
+    if (showDestinationPage && !showDestinationDetails) return `${Math.round((7 / totalSteps) * 100)}%`;
+
+    // Step 9: Destination Details
+    if (showDestinationDetails && !showTeamPage) return `${Math.round((8 / totalSteps) * 100)}%`;
+
+    // Step 10: Team Selection
+    if (showTeamPage && !showServicesPage) return `${Math.round((9 / totalSteps) * 100)}%`;
+
+    // Step 11: Services
+    if (showServicesPage && !showReviewPage) return `${Math.round((10 / totalSteps) * 100)}%`;
+
+    // Step 12: Review
+    if (showReviewPage && !showNextStepsPage) return `${Math.round((11 / totalSteps) * 100)}%`;
+
+    // Final step: Contact Info
+    if (showNextStepsPage) return "100%";
+
+    return `${Math.round((3 / totalSteps) * 100)}%`;
   };
 
     const nextStep = async () => {
@@ -1415,10 +1447,14 @@ export function BookingForm({ config, isPreview = false }: BookingFormProps) {
             <ChevronLeft className="w-5 h-5 text-gray-500" />
           </button>
           <div className="flex-1 mx-4">
-            <div className="h-1 bg-gray-200 rounded-full">
+            <div className="h-2 bg-gray-200 rounded-full overflow-hidden shadow-inner">
               <div
-                className="h-1 rounded-full transition-all duration-300"
-                style={{ width: getProgressWidth(), backgroundColor: config.primaryColor }}
+                className="h-2 rounded-full transition-all duration-1000 ease-out"
+                style={{
+                  width: getProgressWidth(),
+                  background: `linear-gradient(90deg, ${config.primaryColor}, ${config.secondaryColor})`,
+                  boxShadow: `0 0 10px ${config.primaryColor}50`
+                }}
               />
             </div>
           </div>
@@ -1465,10 +1501,14 @@ export function BookingForm({ config, isPreview = false }: BookingFormProps) {
             <ChevronLeft className="w-5 h-5 text-gray-500" />
           </button>
           <div className="flex-1 mx-4">
-            <div className="h-1 bg-gray-200 rounded-full">
+            <div className="h-2 bg-gray-200 rounded-full overflow-hidden shadow-inner">
               <div
-                className="h-1 rounded-full transition-all duration-300"
-                style={{ width: getProgressWidth(), backgroundColor: config.primaryColor }}
+                className="h-2 rounded-full transition-all duration-1000 ease-out"
+                style={{
+                  width: getProgressWidth(),
+                  background: `linear-gradient(90deg, ${config.primaryColor}, ${config.secondaryColor})`,
+                  boxShadow: `0 0 10px ${config.primaryColor}50`
+                }}
               />
             </div>
           </div>
@@ -1536,10 +1576,14 @@ export function BookingForm({ config, isPreview = false }: BookingFormProps) {
             <ChevronLeft className="w-5 h-5 text-gray-500" />
           </button>
           <div className="flex-1 mx-4">
-            <div className="h-1 bg-gray-200 rounded-full">
+            <div className="h-2 bg-gray-200 rounded-full overflow-hidden shadow-inner">
               <div
-                className="h-1 rounded-full transition-all duration-300"
-                style={{ width: getProgressWidth(), backgroundColor: config.primaryColor }}
+                className="h-2 rounded-full transition-all duration-1000 ease-out"
+                style={{
+                  width: getProgressWidth(),
+                  background: `linear-gradient(90deg, ${config.primaryColor}, ${config.secondaryColor})`,
+                  boxShadow: `0 0 10px ${config.primaryColor}50`
+                }}
               />
             </div>
           </div>
@@ -1583,10 +1627,14 @@ export function BookingForm({ config, isPreview = false }: BookingFormProps) {
             <ChevronLeft className="w-5 h-5 text-gray-500" />
           </button>
           <div className="flex-1 mx-4">
-            <div className="h-1 bg-gray-200 rounded-full">
+            <div className="h-2 bg-gray-200 rounded-full overflow-hidden shadow-inner">
               <div
-                className="h-1 rounded-full transition-all duration-300"
-                style={{ width: getProgressWidth(), backgroundColor: config.primaryColor }}
+                className="h-2 rounded-full transition-all duration-1000 ease-out"
+                style={{
+                  width: getProgressWidth(),
+                  background: `linear-gradient(90deg, ${config.primaryColor}, ${config.secondaryColor})`,
+                  boxShadow: `0 0 10px ${config.primaryColor}50`
+                }}
               />
             </div>
           </div>
@@ -1633,10 +1681,14 @@ export function BookingForm({ config, isPreview = false }: BookingFormProps) {
             <ChevronLeft className="w-5 h-5 text-gray-500" />
           </button>
           <div className="flex-1 mx-4">
-            <div className="h-1 bg-gray-200 rounded-full">
+            <div className="h-2 bg-gray-200 rounded-full overflow-hidden shadow-inner">
               <div
-                className="h-1 rounded-full transition-all duration-300"
-                style={{ width: getProgressWidth(), backgroundColor: config.primaryColor }}
+                className="h-2 rounded-full transition-all duration-1000 ease-out"
+                style={{
+                  width: getProgressWidth(),
+                  background: `linear-gradient(90deg, ${config.primaryColor}, ${config.secondaryColor})`,
+                  boxShadow: `0 0 10px ${config.primaryColor}50`
+                }}
               />
             </div>
           </div>
@@ -1680,10 +1732,14 @@ export function BookingForm({ config, isPreview = false }: BookingFormProps) {
             <ChevronLeft className="w-5 h-5 text-gray-500" />
           </button>
           <div className="flex-1 mx-4">
-            <div className="h-1 bg-gray-200 rounded-full">
+            <div className="h-2 bg-gray-200 rounded-full overflow-hidden shadow-inner">
               <div
-                className="h-1 rounded-full transition-all duration-300"
-                style={{ width: getProgressWidth(), backgroundColor: config.primaryColor }}
+                className="h-2 rounded-full transition-all duration-1000 ease-out"
+                style={{
+                  width: getProgressWidth(),
+                  background: `linear-gradient(90deg, ${config.primaryColor}, ${config.secondaryColor})`,
+                  boxShadow: `0 0 10px ${config.primaryColor}50`
+                }}
               />
             </div>
           </div>
@@ -1772,10 +1828,14 @@ export function BookingForm({ config, isPreview = false }: BookingFormProps) {
             <ChevronLeft className="w-5 h-5 text-gray-500" />
           </button>
           <div className="flex-1 mx-4">
-            <div className="h-1 bg-gray-200 rounded-full">
+            <div className="h-2 bg-gray-200 rounded-full overflow-hidden shadow-inner">
               <div
-                className="h-1 rounded-full transition-all duration-300"
-                style={{ width: getProgressWidth(), backgroundColor: config.primaryColor }}
+                className="h-2 rounded-full transition-all duration-1000 ease-out"
+                style={{
+                  width: getProgressWidth(),
+                  background: `linear-gradient(90deg, ${config.primaryColor}, ${config.secondaryColor})`,
+                  boxShadow: `0 0 10px ${config.primaryColor}50`
+                }}
               />
             </div>
           </div>
@@ -1836,10 +1896,14 @@ export function BookingForm({ config, isPreview = false }: BookingFormProps) {
                 <ChevronLeft className="w-5 h-5 text-gray-500" />
               </button>
               <div className="flex-1 mx-4">
-                <div className="h-1 bg-gray-200 rounded-full">
+                <div className="h-2 bg-gray-200 rounded-full overflow-hidden shadow-inner">
                   <div
-                    className="h-1 rounded-full transition-all duration-300"
-                    style={{ width: getProgressWidth(), backgroundColor: config.primaryColor }}
+                    className="h-2 rounded-full transition-all duration-1000 ease-out"
+                    style={{
+                      width: getProgressWidth(),
+                      background: `linear-gradient(90deg, ${config.primaryColor}, ${config.secondaryColor})`,
+                      boxShadow: `0 0 10px ${config.primaryColor}50`
+                    }}
                   />
                 </div>
               </div>
@@ -2008,10 +2072,14 @@ export function BookingForm({ config, isPreview = false }: BookingFormProps) {
                 <ChevronLeft className="w-5 h-5 text-gray-500" />
               </button>
               <div className="flex-1 mx-4">
-                <div className="h-1 bg-gray-200 rounded-full">
+                <div className="h-2 bg-gray-200 rounded-full overflow-hidden shadow-inner">
                   <div
-                    className="h-1 rounded-full transition-all duration-300"
-                    style={{ width: getProgressWidth(), backgroundColor: config.primaryColor }}
+                    className="h-2 rounded-full transition-all duration-1000 ease-out"
+                    style={{
+                      width: getProgressWidth(),
+                      background: `linear-gradient(90deg, ${config.primaryColor}, ${config.secondaryColor})`,
+                      boxShadow: `0 0 10px ${config.primaryColor}50`
+                    }}
                   />
                 </div>
               </div>
@@ -2178,10 +2246,14 @@ export function BookingForm({ config, isPreview = false }: BookingFormProps) {
             <ChevronLeft className="w-5 h-5 text-gray-500" />
           </button>
           <div className="flex-1 mx-4">
-            <div className="h-1 bg-gray-200 rounded-full">
+            <div className="h-2 bg-gray-200 rounded-full overflow-hidden shadow-inner">
               <div
-                className="h-1 rounded-full transition-all duration-300"
-                style={{ width: getProgressWidth(), backgroundColor: config.primaryColor }}
+                className="h-2 rounded-full transition-all duration-1000 ease-out"
+                style={{
+                  width: getProgressWidth(),
+                  background: `linear-gradient(90deg, ${config.primaryColor}, ${config.secondaryColor})`,
+                  boxShadow: `0 0 10px ${config.primaryColor}50`
+                }}
               />
             </div>
           </div>
@@ -2231,10 +2303,14 @@ export function BookingForm({ config, isPreview = false }: BookingFormProps) {
             <ChevronLeft className="w-5 h-5 text-gray-500" />
           </button>
           <div className="flex-1 mx-4">
-            <div className="h-1 bg-gray-200 rounded-full">
+            <div className="h-2 bg-gray-200 rounded-full overflow-hidden shadow-inner">
               <div
-                className="h-1 rounded-full transition-all duration-300"
-                style={{ width: getProgressWidth(), backgroundColor: config.primaryColor }}
+                className="h-2 rounded-full transition-all duration-1000 ease-out"
+                style={{
+                  width: getProgressWidth(),
+                  background: `linear-gradient(90deg, ${config.primaryColor}, ${config.secondaryColor})`,
+                  boxShadow: `0 0 10px ${config.primaryColor}50`
+                }}
               />
             </div>
           </div>
@@ -2436,10 +2512,14 @@ export function BookingForm({ config, isPreview = false }: BookingFormProps) {
             <ChevronLeft className="w-5 h-5 text-gray-500" />
           </button>
           <div className="flex-1 mx-4">
-            <div className="h-1 bg-gray-200 rounded-full">
+            <div className="h-2 bg-gray-200 rounded-full overflow-hidden shadow-inner">
               <div
-                className="h-1 rounded-full transition-all duration-300"
-                style={{ width: getProgressWidth(), backgroundColor: config.primaryColor }}
+                className="h-2 rounded-full transition-all duration-1000 ease-out"
+                style={{
+                  width: getProgressWidth(),
+                  background: `linear-gradient(90deg, ${config.primaryColor}, ${config.secondaryColor})`,
+                  boxShadow: `0 0 10px ${config.primaryColor}50`
+                }}
               />
             </div>
           </div>
@@ -2519,10 +2599,14 @@ export function BookingForm({ config, isPreview = false }: BookingFormProps) {
             <ChevronLeft className="w-5 h-5 text-gray-500" />
           </button>
           <div className="flex-1 mx-4">
-            <div className="h-1 bg-gray-200 rounded-full">
+            <div className="h-2 bg-gray-200 rounded-full overflow-hidden shadow-inner">
               <div
-                className="h-1 rounded-full transition-all duration-300"
-                style={{ width: getProgressWidth(), backgroundColor: config.primaryColor }}
+                className="h-2 rounded-full transition-all duration-1000 ease-out"
+                style={{
+                  width: getProgressWidth(),
+                  background: `linear-gradient(90deg, ${config.primaryColor}, ${config.secondaryColor})`,
+                  boxShadow: `0 0 10px ${config.primaryColor}50`
+                }}
               />
             </div>
           </div>
@@ -2715,10 +2799,14 @@ export function BookingForm({ config, isPreview = false }: BookingFormProps) {
                 <ChevronLeft className="w-5 h-5 text-gray-500" />
               </button>
               <div className="flex-1 mx-4">
-                <div className="h-1 bg-gray-200 rounded-full">
+                <div className="h-2 bg-gray-200 rounded-full overflow-hidden shadow-inner">
                   <div
-                    className="h-1 rounded-full transition-all duration-300"
-                    style={{ width: bookingProgressWidth, backgroundColor: config.primaryColor }}
+                    className="h-2 rounded-full transition-all duration-1000 ease-out"
+                    style={{
+                      width: bookingProgressWidth,
+                      background: `linear-gradient(90deg, ${config.primaryColor}, ${config.secondaryColor})`,
+                      boxShadow: `0 0 10px ${config.primaryColor}50`
+                    }}
                   />
                 </div>
               </div>

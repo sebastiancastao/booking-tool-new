@@ -1,4 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
+import {
+  submitToGravityForms,
+  transformPayloadToGravityFormsData,
+  GravityFormsSubmissionResult,
+} from "@/lib/gravityForms";
 
 const RECIPIENTS = ["service@furnituretaxi.site", "sebastiancastao379@gmail.com"];
 
@@ -127,7 +132,31 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    return NextResponse.json({ success: true });
+    // Submit to Gravity Forms (non-blocking - email was already sent)
+    let gravityFormsResult: GravityFormsSubmissionResult = {
+      success: false,
+      error: "Not attempted",
+    };
+
+    try {
+      const gravityFormsData = transformPayloadToGravityFormsData(payload);
+      logDebug("Gravity Forms data:", gravityFormsData);
+      gravityFormsResult = await submitToGravityForms(gravityFormsData);
+      logDebug("Gravity Forms result:", gravityFormsResult);
+    } catch (gfError) {
+      console.error("Gravity Forms submission failed (non-critical):", gfError);
+      gravityFormsResult = {
+        success: false,
+        error: gfError instanceof Error ? gfError.message : "Unknown error",
+      };
+    }
+
+    return NextResponse.json({
+      success: true,
+      gravity_forms_submitted: gravityFormsResult.success,
+      gravity_forms_data: gravityFormsResult.data || null,
+      gravity_forms_error: gravityFormsResult.error || null,
+    });
   } catch (error) {
     console.error("Confirmation email error:", error);
     return NextResponse.json(

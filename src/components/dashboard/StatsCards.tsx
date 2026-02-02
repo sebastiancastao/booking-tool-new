@@ -61,7 +61,7 @@ export function StatsCards({
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-gray-500">{stat.label}</p>
+                  <p className="text-sm text-gray-700">{stat.label}</p>
                   <p className="text-3xl font-bold mt-1">{stat.value}</p>
                 </div>
                 <div className={`p-3 rounded-full ${stat.bgColor}`}>

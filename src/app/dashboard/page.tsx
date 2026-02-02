@@ -134,8 +134,8 @@ export default function DashboardPage() {
                 <Truck className="w-6 h-6 text-white" />
               </div>
               <div>
-                <h1 className="text-xl font-bold">Moving Widget Creator</h1>
-                <p className="text-sm text-gray-500">Manage your booking widgets</p>
+                <h1 className="text-xl font-bold text-gray-900">Moving Widget Creator</h1>
+                <p className="text-sm text-gray-700">Manage your booking widgets</p>
               </div>
             </div>
             <Link href="/dashboard/create">

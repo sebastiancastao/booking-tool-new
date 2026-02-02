@@ -258,7 +258,7 @@ export function WidgetCreator({ widgetId }: WidgetCreatorProps = {}) {
   };
 
   const generateEmbedCode = () => {
-    const baseUrl = typeof window !== "undefined" ? window.location.origin : "";
+    const baseUrl = "https://booking-tool-new.vercel.app";
     return `<!-- Moving Quote Widget -->
 <div id="moving-widget-${config.id}"></div>
 <script src="${baseUrl}/widget.js" data-widget-id="${config.id}"></script>`;
@@ -1228,14 +1228,14 @@ export function WidgetCreator({ widgetId }: WidgetCreatorProps = {}) {
                     <div className="flex items-center gap-2">
                       <Input
                         readOnly
-                        value={`${typeof window !== "undefined" ? window.location.origin : ""}/widget/${config.id}`}
+                        value={`https://booking-tool-new.vercel.app/widget/${config.id}`}
                         className="font-mono text-sm"
                       />
                       <Button
                         variant="outline"
                         onClick={() => {
                           navigator.clipboard.writeText(
-                            `${window.location.origin}/widget/${config.id}`
+                            `https://booking-tool-new.vercel.app/widget/${config.id}`
                           );
                         }}
                       >
