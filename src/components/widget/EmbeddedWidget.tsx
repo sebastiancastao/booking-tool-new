@@ -58,7 +58,7 @@ export function EmbeddedWidget({ config }: EmbeddedWidgetProps) {
 
   if (isEmbedded) {
     return (
-      <div ref={containerRef} className="w-full">
+      <div ref={containerRef} className="w-full min-h-screen bg-gray-50">
         <WidgetPreview config={config} isPreview={false} />
       </div>
     );

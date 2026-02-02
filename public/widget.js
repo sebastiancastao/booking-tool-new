@@ -29,6 +29,11 @@
     iframe.setAttribute('scrolling', 'no');
     iframe.setAttribute('title', 'Moving Quote Widget');
 
+    // Style the container
+    container.style.backgroundColor = '#f9fafb';
+    container.style.borderRadius = '12px';
+    container.style.overflow = 'hidden';
+
     // Insert iframe into container
     container.innerHTML = '';
     container.appendChild(iframe);
