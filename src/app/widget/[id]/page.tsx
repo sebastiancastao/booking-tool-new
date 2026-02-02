@@ -1,8 +1,9 @@
-import { WidgetPreview } from "@/components/widget/WidgetPreview";
+import { EmbeddedWidget } from "@/components/widget/EmbeddedWidget";
 import { createClient } from "@/lib/supabase/server";
 import { notFound } from "next/navigation";
 import type { WidgetConfig } from "@/types";
 import { DEFAULT_PRICING_CONFIG } from "@/types";
+import { Suspense } from "react";
 
 interface WidgetPageProps {
   params: Promise<{ id: string }>;
@@ -36,11 +37,9 @@ export default async function WidgetPage({ params }: WidgetPageProps) {
   // For demo purposes, return demo widget if no Supabase configured
   if (!process.env.NEXT_PUBLIC_SUPABASE_URL || id === "demo") {
     return (
-      <div className="min-h-screen bg-gray-100 flex items-center justify-center p-4">
-        <div className="w-full max-w-2xl">
-          <WidgetPreview config={demoWidgetConfig} isPreview={false} />
-        </div>
-      </div>
+      <Suspense fallback={<div className="min-h-screen bg-gray-100" />}>
+        <EmbeddedWidget config={demoWidgetConfig} />
+      </Suspense>
     );
   }
 
@@ -80,20 +79,16 @@ export default async function WidgetPage({ params }: WidgetPageProps) {
     };
 
     return (
-      <div className="min-h-screen bg-gray-100 flex items-center justify-center p-4">
-        <div className="w-full max-w-2xl">
-          <WidgetPreview config={widgetConfig} isPreview={false} />
-        </div>
-      </div>
+      <Suspense fallback={<div className="min-h-screen bg-gray-100" />}>
+        <EmbeddedWidget config={widgetConfig} />
+      </Suspense>
     );
   } catch {
     // If Supabase fails, show demo widget
     return (
-      <div className="min-h-screen bg-gray-100 flex items-center justify-center p-4">
-        <div className="w-full max-w-2xl">
-          <WidgetPreview config={demoWidgetConfig} isPreview={false} />
-        </div>
-      </div>
+      <Suspense fallback={<div className="min-h-screen bg-gray-100" />}>
+        <EmbeddedWidget config={demoWidgetConfig} />
+      </Suspense>
     );
   }
 }
