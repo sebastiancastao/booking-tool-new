@@ -433,7 +433,7 @@ export function WidgetCreator({ widgetId }: WidgetCreatorProps = {}) {
                     <Input
                       value={config.companyName}
                       onChange={(e) => updateConfig({ companyName: e.target.value })}
-                      placeholder="Your Moving Company"
+                      placeholder="The Furniture Taxi"
                       className="mt-1"
                     />
                   </div>

@@ -689,10 +689,10 @@ export function BookingForm({ config, isPreview = false }: BookingFormProps) {
     setShowDestinationDetails(false);
     setShowTeamPage(false);
     setShowUnloadingHoursPage(false);
-    setShowServicesPage(false);
+    setShowServicesPage(true);
     setShowStoragePage(false);
     setShowProtectionPage(false);
-    setShowReviewPage(true);
+    setShowReviewPage(false);
     setShowNextStepsPage(false);
   };
 
@@ -1139,8 +1139,8 @@ export function BookingForm({ config, isPreview = false }: BookingFormProps) {
     setShowServicesPage(false);
     setShowStoragePage(false);
     setShowProtectionPage(false);
-    setShowReviewPage(true);
-    setShowNextStepsPage(false);
+    setShowReviewPage(false);
+    setShowNextStepsPage(true);
   };
 
     const handleReviewContinue = () => {
@@ -2864,6 +2864,7 @@ export function BookingForm({ config, isPreview = false }: BookingFormProps) {
                 <div className="text-xs text-gray-500">{moveActivityLabel}</div>
                 <div className="font-medium text-gray-900">{moveDateSummary}</div>
                 <div className="text-xs text-gray-500">{selectedTeamOption.title}</div>
+                <div className="text-xs text-gray-500">Hourly rate: {selectedTeamOption.rateShort}</div>
               </div>
 
                 <div className="border-b border-gray-100 pb-3">

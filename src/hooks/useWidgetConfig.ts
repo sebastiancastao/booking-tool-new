@@ -7,7 +7,7 @@ import { DEFAULT_PRICING_CONFIG } from "@/types";
 
 const defaultWidgetConfig: Omit<WidgetConfig, "id" | "createdAt" | "updatedAt" | "userId"> = {
   name: "My Moving Widget",
-  companyName: "Your Moving Company",
+  companyName: "The Furniture Taxi",
   logo: "",
   primaryColor: "#3B82F6",
   secondaryColor: "#1E40AF",
