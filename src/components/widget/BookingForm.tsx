@@ -76,6 +76,7 @@ const bookingSchema = z.object({
   storageDuration: z.string().optional(),
   insuranceOption: z.string().optional(),
   declaredValue: z.string().optional(),
+  promoCode: z.string().trim().max(50).optional(),
   additionalNotes: z.string().optional(),
 });
 
@@ -108,6 +109,11 @@ type TeamOptionDisplay = TeamOptionBase & {
   detail: string;
   minimumShort: string;
   minimumLong: string;
+};
+type PromoDiscount = {
+  code: string;
+  discountType: "percent" | "fixed";
+  discountValue: number;
 };
 
 const HOME_SIZES = [
@@ -245,9 +251,11 @@ export function BookingForm({ config, isPreview = false }: BookingFormProps) {
   const [showStoragePage, setShowStoragePage] = useState(false);
   const [showProtectionPage, setShowProtectionPage] = useState(false);
   const [showReviewPage, setShowReviewPage] = useState(false);
+  const [showPromoCodePage, setShowPromoCodePage] = useState(false);
   const [showNextStepsPage, setShowNextStepsPage] = useState(false);
   const [showContactPage, setShowContactPage] = useState(false);
   const confirmationSentRef = useRef(false);
+  const lastValidatedPromoCodeRef = useRef<string | null>(null);
   const [originQuery, setOriginQuery] = useState("");
   const [originSuggestions, setOriginSuggestions] = useState<OriginSuggestion[]>([]);
   const [originSuggestionsLoading, setOriginSuggestionsLoading] = useState(false);
@@ -277,6 +285,11 @@ export function BookingForm({ config, isPreview = false }: BookingFormProps) {
     text: string;
   } | null>(null);
   const [distanceLoading, setDistanceLoading] = useState(false);
+  const [promoValidation, setPromoValidation] = useState<{
+    status: "idle" | "checking" | "valid" | "invalid";
+    promo?: PromoDiscount;
+    message?: string;
+  }>({ status: "idle" });
 
   const {
     register,
@@ -303,6 +316,7 @@ export function BookingForm({ config, isPreview = false }: BookingFormProps) {
   const moveTimeValue = watch("moveTime");
   const insuranceOptionValue = watch("insuranceOption");
   const storageDurationValue = watch("storageDuration");
+  const promoCodeValue = watch("promoCode");
   const firstNameValue = watch("firstName");
   const lastNameValue = watch("lastName");
   const emailValue = watch("email");
@@ -316,6 +330,12 @@ export function BookingForm({ config, isPreview = false }: BookingFormProps) {
   const dropoffCity = watch("dropoffCity");
   const dropoffState = watch("dropoffState");
   const dropoffZip = watch("dropoffZip");
+
+  useEffect(() => {
+    const normalized = String(promoCodeValue || "").trim().toUpperCase();
+    if (normalized && lastValidatedPromoCodeRef.current === normalized) return;
+    setPromoValidation({ status: "idle" });
+  }, [promoCodeValue]);
 
   useEffect(() => {
     if (!showOriginPage || showOriginDetails) {
@@ -588,6 +608,12 @@ export function BookingForm({ config, isPreview = false }: BookingFormProps) {
   const estimateMinTotal = minLaborCost + travelCost + distanceCost + accessibilityCost + protectionCost;
   const estimateMaxTotal = maxLaborCost + travelCost + distanceCost + accessibilityCost + protectionCost;
   const estimateLabel = formatEstimateRange(estimateMinTotal, estimateMaxTotal);
+  const appliedPromo = promoValidation.status === "valid" ? promoValidation.promo : undefined;
+  const discountedMinTotal = appliedPromo ? applyPromoDiscount(estimateMinTotal, appliedPromo) : estimateMinTotal;
+  const discountedMaxTotal = appliedPromo ? applyPromoDiscount(estimateMaxTotal, appliedPromo) : estimateMaxTotal;
+  const finalEstimateLabel = formatEstimateRange(discountedMinTotal, discountedMaxTotal);
+  const promoSavingsMin = Math.max(0, estimateMinTotal - discountedMinTotal);
+  const promoSavingsMax = Math.max(0, estimateMaxTotal - discountedMaxTotal);
 
   // Breakdown for display
   const laborLabel = `${estimateLaborRange.minLabor}-${estimateLaborRange.maxLabor} hrs labor`;
@@ -651,8 +677,8 @@ export function BookingForm({ config, isPreview = false }: BookingFormProps) {
     // Step 12: Services
     if (showServicesPage && !showReviewPage) return `${Math.round((11 / totalSteps) * 100)}%`;
 
-    // Step 13: Review
-    if (showReviewPage && !showNextStepsPage) return `${Math.round((12 / totalSteps) * 100)}%`;
+    // Step 13: Promo code
+    if (showPromoCodePage && !showNextStepsPage) return `${Math.round((12 / totalSteps) * 100)}%`;
 
     // Final step: Confirmation
     if (showNextStepsPage) return "100%";
@@ -692,6 +718,7 @@ export function BookingForm({ config, isPreview = false }: BookingFormProps) {
     setShowStoragePage(false);
     setShowProtectionPage(false);
     setShowReviewPage(false);
+    setShowPromoCodePage(false);
     setShowNextStepsPage(false);
   };
 
@@ -719,6 +746,7 @@ export function BookingForm({ config, isPreview = false }: BookingFormProps) {
     setShowStoragePage(false);
     setShowProtectionPage(false);
     setShowReviewPage(false);
+    setShowPromoCodePage(false);
     setShowNextStepsPage(false);
   };
 
@@ -744,6 +772,7 @@ export function BookingForm({ config, isPreview = false }: BookingFormProps) {
     setShowStoragePage(false);
     setShowProtectionPage(false);
     setShowReviewPage(false);
+    setShowPromoCodePage(false);
     setShowNextStepsPage(false);
   };
 
@@ -766,6 +795,7 @@ export function BookingForm({ config, isPreview = false }: BookingFormProps) {
     setShowStoragePage(false);
     setShowProtectionPage(false);
     setShowReviewPage(false);
+    setShowPromoCodePage(false);
     setShowNextStepsPage(false);
   };
 
@@ -1122,6 +1152,7 @@ export function BookingForm({ config, isPreview = false }: BookingFormProps) {
     setShowStoragePage(false);
     setShowProtectionPage(false);
     setShowReviewPage(false);
+    setShowPromoCodePage(false);
     setShowNextStepsPage(false);
   };
 
@@ -1131,6 +1162,7 @@ export function BookingForm({ config, isPreview = false }: BookingFormProps) {
     setShowStoragePage(false);
     setShowProtectionPage(false);
     setShowReviewPage(false);
+    setShowPromoCodePage(false);
     setShowNextStepsPage(false);
   };
 
@@ -1139,11 +1171,102 @@ export function BookingForm({ config, isPreview = false }: BookingFormProps) {
     setShowStoragePage(false);
     setShowProtectionPage(false);
     setShowReviewPage(false);
+    setShowPromoCodePage(true);
+    setShowNextStepsPage(false);
+  };
+
+  const handlePromoCodeBack = () => {
+    setShowPromoCodePage(false);
+    setShowNextStepsPage(false);
+    setShowServicesPage(true);
+  };
+
+  const validatePromoCode = async (promoCode: string) => {
+    const code = promoCode.trim().toUpperCase();
+    if (!code) return null;
+
+    setPromoValidation({ status: "checking", message: "Checking promo code..." });
+
+    try {
+      const response = await fetch(`/api/promo-codes?code=${encodeURIComponent(code)}`);
+      const data = (await response.json()) as
+        | { valid: true; promo: PromoDiscount }
+        | { valid: false; reason?: string };
+
+      if (response.ok && "valid" in data && data.valid && "promo" in data && data.promo) {
+        lastValidatedPromoCodeRef.current = data.promo.code.toUpperCase();
+        setPromoValidation({
+          status: "valid",
+          promo: data.promo,
+          message: `Applied ${data.promo.code} (${formatPromoLabel(data.promo)}).`,
+        });
+        return data.promo;
+      }
+
+      lastValidatedPromoCodeRef.current = null;
+      setPromoValidation({
+        status: "invalid",
+        message: "That promo code was not found or is not active.",
+      });
+      return null;
+    } catch {
+      lastValidatedPromoCodeRef.current = null;
+      setPromoValidation({
+        status: "invalid",
+        message: "Could not validate promo code. Please try again.",
+      });
+      return null;
+    }
+  };
+
+  const handlePromoCodeContinue = async () => {
+    const promoCode = String(getValues("promoCode") || "").trim().toUpperCase();
+
+    if (promoCode) {
+      const promo = await validatePromoCode(promoCode);
+      if (!promo) return;
+
+      setValue("promoCode", promoCode, { shouldDirty: true });
+      setCustomFieldValues((prev) => ({
+        ...prev,
+        promoCode,
+        promoDiscountType: promo.discountType,
+        promoDiscountValue: String(promo.discountValue),
+      }));
+    } else {
+      lastValidatedPromoCodeRef.current = null;
+      setPromoValidation({ status: "idle" });
+      setCustomFieldValues((prev) => {
+        const next = { ...(prev as Record<string, string | boolean>) };
+        delete next.promoCode;
+        delete next.promoDiscountType;
+        delete next.promoDiscountValue;
+        return next;
+      });
+    }
+
+    setShowPromoCodePage(false);
+    setShowNextStepsPage(true);
+  };
+
+  const handleSkipPromoCode = () => {
+    lastValidatedPromoCodeRef.current = null;
+    setPromoValidation({ status: "idle" });
+    setValue("promoCode", "", { shouldDirty: true });
+    setCustomFieldValues((prev) => {
+      const next = { ...(prev as Record<string, string | boolean>) };
+      delete next.promoCode;
+      delete next.promoDiscountType;
+      delete next.promoDiscountValue;
+      return next;
+    });
+    setShowPromoCodePage(false);
     setShowNextStepsPage(true);
   };
 
     const handleReviewContinue = () => {
       setShowReviewPage(false);
+      setShowPromoCodePage(false);
       setShowNextStepsPage(false);
       setCurrentStep(0);
     };
@@ -1167,7 +1290,7 @@ export function BookingForm({ config, isPreview = false }: BookingFormProps) {
         routeSummary,
         moveDateSummary,
         team: selectedTeamOption.title,
-        estimateLabel,
+        estimateLabel: finalEstimateLabel,
       },
       selections: {
         serviceType,
@@ -1200,6 +1323,15 @@ export function BookingForm({ config, isPreview = false }: BookingFormProps) {
         distanceCost,
         estimateMinTotal,
         estimateMaxTotal,
+        discountedMinTotal,
+        discountedMaxTotal,
+        promo: appliedPromo
+          ? {
+              code: appliedPromo.code,
+              discountType: appliedPromo.discountType,
+              discountValue: appliedPromo.discountValue,
+            }
+          : null,
       },
       createdAt: new Date().toISOString(),
     };
@@ -1229,6 +1361,7 @@ export function BookingForm({ config, isPreview = false }: BookingFormProps) {
     setShowServicesPage(false);
     setShowProtectionPage(false);
     setShowReviewPage(false);
+    setShowPromoCodePage(false);
     setShowNextStepsPage(false);
   };
 
@@ -1244,6 +1377,7 @@ export function BookingForm({ config, isPreview = false }: BookingFormProps) {
     setShowServicesPage(true);
     setShowProtectionPage(false);
     setShowReviewPage(false);
+    setShowPromoCodePage(false);
     setShowNextStepsPage(false);
   };
 
@@ -1258,6 +1392,7 @@ export function BookingForm({ config, isPreview = false }: BookingFormProps) {
     setShowServicesPage(true);
     setShowProtectionPage(false);
     setShowReviewPage(false);
+    setShowPromoCodePage(false);
     setShowNextStepsPage(false);
   };
 
@@ -1279,6 +1414,7 @@ export function BookingForm({ config, isPreview = false }: BookingFormProps) {
     setShowStoragePage(false);
     setShowServicesPage(true);
     setShowReviewPage(false);
+    setShowPromoCodePage(false);
     setShowNextStepsPage(false);
   };
 
@@ -1291,6 +1427,7 @@ export function BookingForm({ config, isPreview = false }: BookingFormProps) {
     setShowStoragePage(false);
     setShowServicesPage(true);
     setShowReviewPage(false);
+    setShowPromoCodePage(false);
     setShowNextStepsPage(false);
   };
 
@@ -2704,7 +2841,7 @@ export function BookingForm({ config, isPreview = false }: BookingFormProps) {
     );
   }
 
-  // Page 14: Review
+  // Legacy: Review (unused)
   if (showReviewPage) {
     return (
       <div className="py-4">
@@ -2780,6 +2917,86 @@ export function BookingForm({ config, isPreview = false }: BookingFormProps) {
       );
     }
 
+  // Page 14: Promo code
+  if (showPromoCodePage) {
+    return (
+      <div className="py-4">
+        {/* Header with back button and progress */}
+        <div className="flex items-center justify-between mb-2">
+          <button
+            type="button"
+            onClick={handlePromoCodeBack}
+            className="p-1 hover:bg-gray-100 rounded"
+          >
+            <ChevronLeft className="w-5 h-5 text-gray-500" />
+          </button>
+          <div className="flex-1 mx-4">
+            <div className="h-2 bg-gray-200 rounded-full overflow-hidden shadow-inner">
+              <div
+                className="h-2 rounded-full transition-all duration-1000 ease-out"
+                style={{
+                  width: getProgressWidth(),
+                  background: `linear-gradient(90deg, ${config.primaryColor}, ${config.secondaryColor})`,
+                  boxShadow: `0 0 10px ${config.primaryColor}50`,
+                }}
+              />
+            </div>
+          </div>
+          <button type="button" className="p-1 hover:bg-gray-100 rounded">
+            <X className="w-5 h-5 text-gray-400" />
+          </button>
+        </div>
+
+        <h2 className="text-xl text-gray-700 mt-8 mb-4">Do you have a promo code?</h2>
+
+        <div className="space-y-2">
+          <Label htmlFor="promoCode">Promo code (optional)</Label>
+          <Input
+            id="promoCode"
+            placeholder="e.g. MOVE10"
+            autoCapitalize="characters"
+            {...register("promoCode")}
+          />
+          <p className="text-xs text-gray-500">
+            If your code is valid, we&apos;ll apply it during confirmation.
+          </p>
+          {promoValidation.status !== "idle" && promoValidation.message && (
+            <div
+              className={[
+                "mt-2 rounded-md border px-3 py-2 text-xs",
+                promoValidation.status === "valid" && "border-green-200 bg-green-50 text-green-800",
+                promoValidation.status === "invalid" && "border-red-200 bg-red-50 text-red-800",
+                promoValidation.status === "checking" && "border-gray-200 bg-gray-50 text-gray-800",
+              ]
+                .filter(Boolean)
+                .join(" ")}
+            >
+              {promoValidation.message}
+            </div>
+          )}
+        </div>
+
+        <Button
+          type="button"
+          onClick={handlePromoCodeContinue}
+          style={{ backgroundColor: config.primaryColor }}
+          className="w-full text-white hover:opacity-90 mt-6"
+          disabled={promoValidation.status === "checking"}
+        >
+          {promoValidation.status === "checking" ? "CHECKING..." : "CONTINUE"}
+        </Button>
+
+        <button
+          type="button"
+          onClick={handleSkipPromoCode}
+          className="w-full text-sm text-gray-500 hover:text-gray-700 mt-3"
+        >
+          I don&apos;t have a promo code
+        </button>
+      </div>
+    );
+  }
+
   // Page 15: Next Steps
   if (showNextStepsPage) {
     return (
@@ -2828,7 +3045,19 @@ export function BookingForm({ config, isPreview = false }: BookingFormProps) {
 
                 <div className="border-b border-gray-100 pb-3">
                   <div className="text-xs text-gray-500">Estimate</div>
-                  <div className="font-medium text-gray-900">{estimateLabel}</div>
+                  <div className="font-medium text-gray-900">{finalEstimateLabel}</div>
+                  {appliedPromo && (
+                    <div className="text-xs text-green-700 mt-1">
+                      Promo {appliedPromo.code}: {formatPromoLabel(appliedPromo)} (saves{" "}
+                      {formatEstimateRange(promoSavingsMin, promoSavingsMax)})
+                    </div>
+                  )}
+                  {!appliedPromo && promoCodeValue && promoValidation.status === "invalid" && (
+                    <div className="text-xs text-red-600 mt-1">Promo code not applied.</div>
+                  )}
+                  {appliedPromo && (
+                    <div className="text-xs text-gray-500 mt-1">Original: {estimateLabel}</div>
+                  )}
                   <div className="text-xs text-gray-500 mt-1">
                     how the estimate is calculated
                   </div>
@@ -3634,6 +3863,23 @@ function formatEstimateRange(minValue: number, maxValue: number): string {
     return formatCurrency(maxValue);
   }
   return `${formatCurrency(minValue)}-${formatCurrency(maxValue)}`;
+}
+
+function applyPromoDiscount(total: number, promo: PromoDiscount): number {
+  const safeTotal = Number.isFinite(total) ? total : 0;
+  const value = Number.isFinite(promo.discountValue) ? promo.discountValue : 0;
+
+  if (promo.discountType === "percent") {
+    const percent = Math.min(100, Math.max(0, value));
+    return Math.max(0, safeTotal * (1 - percent / 100));
+  }
+
+  return Math.max(0, safeTotal - Math.max(0, value));
+}
+
+function formatPromoLabel(promo: PromoDiscount): string {
+  if (promo.discountType === "percent") return `${promo.discountValue}% off`;
+  return `${formatCurrency(promo.discountValue)} off`;
 }
 
 function getLaborHelpLabel(laborHelpType: LaborHelpType): string {
