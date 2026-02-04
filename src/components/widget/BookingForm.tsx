@@ -2122,7 +2122,7 @@ export function BookingForm({ config, isPreview = false }: BookingFormProps) {
 
         {/* Question */}
         <h2 className="text-xl text-gray-700 mt-8 mb-2">
-          What's your preferred start time?
+          What&apos;s your preferred start time?
         </h2>
         <div className="text-sm text-gray-400 mb-4">{preferredDateLabel}</div>
 

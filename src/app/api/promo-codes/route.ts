@@ -12,6 +12,7 @@ type PromoRecord = {
   ends_at: string | null;
   max_uses: number | null;
   uses_count: number;
+  created_at?: string;
 };
 
 type PromoInput = {
@@ -32,6 +33,42 @@ function normalizePromo(input: PromoInput) {
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
+    const mode = String(searchParams.get("mode") || "").trim().toLowerCase();
+
+    if (mode === "list" || searchParams.get("list") === "1") {
+      const limitRaw = Number(searchParams.get("limit") ?? 50);
+      const offsetRaw = Number(searchParams.get("offset") ?? 0);
+      const limit = Number.isFinite(limitRaw) ? Math.max(1, Math.min(500, Math.floor(limitRaw))) : 50;
+      const offset = Number.isFinite(offsetRaw) ? Math.max(0, Math.floor(offsetRaw)) : 0;
+      const q = String(searchParams.get("q") || "").trim().toUpperCase();
+
+      if (!process.env.NEXT_PUBLIC_SUPABASE_URL) {
+        return NextResponse.json({ promos: [], count: 0, demo: true });
+      }
+
+      const supabase = await createClient();
+
+      let query = supabase
+        .from("promo_codes")
+        .select(
+          "id,code,discount_type,discount_value,is_active,starts_at,ends_at,max_uses,uses_count,created_at",
+          { count: "exact" }
+        );
+
+      if (q) query = query.ilike("code", `%${q}%`);
+
+      const { data, error, count } = await query
+        .order("created_at", { ascending: false })
+        .range(offset, offset + limit - 1);
+
+      if (error) {
+        console.error("Supabase error listing promo codes:", error);
+        return NextResponse.json({ error: "Failed to load promo codes" }, { status: 500 });
+      }
+
+      return NextResponse.json({ promos: data ?? [], count: count ?? null, limit, offset });
+    }
+
     const codeRaw = String(searchParams.get("code") || "").trim();
     const code = codeRaw.toUpperCase();
 
