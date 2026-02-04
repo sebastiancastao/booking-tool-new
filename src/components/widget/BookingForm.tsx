@@ -512,7 +512,6 @@ export function BookingForm({ config, isPreview = false }: BookingFormProps) {
       ? customFieldValues.storageMoveOutDate
       : "";
   const storageChecked = storageNeeded || showStoragePage;
-  const protectionChecked = additionalProtectionSelected || showProtectionPage;
   const moveDateFullLabel = selectedMoveDate ? formatFullDate(selectedMoveDate) : "Select date";
   const storageMoveOutLabel = storageMoveOutDate
     ? formatFullDate(parseDateValue(storageMoveOutDate) ?? new Date())
@@ -1275,17 +1274,6 @@ export function BookingForm({ config, isPreview = false }: BookingFormProps) {
     setShowStoragePage(false);
   };
 
-  const openProtectionPage = () => {
-    const deductibleValue = getProtectionDeductible(insuranceOptionValue);
-    setProtectionDeductible(deductibleValue || "250");
-    setProtectionDeclaredValue(declaredValueValue || "0");
-    setShowProtectionPage(true);
-    setShowStoragePage(false);
-    setShowServicesPage(false);
-    setShowReviewPage(false);
-    setShowNextStepsPage(false);
-  };
-
   const handleProtectionCancel = () => {
     setShowProtectionPage(false);
     setShowStoragePage(false);
@@ -1304,15 +1292,6 @@ export function BookingForm({ config, isPreview = false }: BookingFormProps) {
     setShowServicesPage(true);
     setShowReviewPage(false);
     setShowNextStepsPage(false);
-  };
-
-  const handleToggleProtection = (checked: boolean) => {
-    if (checked) {
-      openProtectionPage();
-      return;
-    }
-    setValue("insuranceOption", "none", { shouldDirty: true });
-    setValue("declaredValue", "", { shouldDirty: true });
   };
 
   const goToNextMonth = () => {
@@ -2711,26 +2690,6 @@ export function BookingForm({ config, isPreview = false }: BookingFormProps) {
             </div>
             <ChevronRight className="w-4 h-4 text-gray-300 mt-1" />
           </div>
-
-          <div
-            className="flex items-start justify-between gap-3 py-4 px-2 border-b border-gray-100 cursor-pointer"
-            onClick={openProtectionPage}
-          >
-            <Checkbox
-              checked={protectionChecked}
-              onChange={(event) => handleToggleProtection(event.target.checked)}
-              onClick={(event) => event.stopPropagation()}
-              className="mt-1"
-            />
-            <div className="flex-1">
-              <div className="text-sm font-medium text-gray-900">Additional protection</div>
-              <div className="text-xs text-gray-500">
-                Get full protection for your move items. Select from our protection
-                plans.
-              </div>
-            </div>
-            <ChevronRight className="w-4 h-4 text-gray-300 mt-1" />
-          </div>
         </div>
 
         <Button
@@ -3675,12 +3634,6 @@ function formatEstimateRange(minValue: number, maxValue: number): string {
     return formatCurrency(maxValue);
   }
   return `${formatCurrency(minValue)}-${formatCurrency(maxValue)}`;
-}
-
-function getProtectionDeductible(value?: string): string | null {
-  if (!value) return null;
-  const match = value.match(/deductible_(\d+)/);
-  return match ? match[1] : null;
 }
 
 function getLaborHelpLabel(laborHelpType: LaborHelpType): string {
