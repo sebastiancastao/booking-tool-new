@@ -518,8 +518,18 @@ export function BookingForm({ config, isPreview = false }: BookingFormProps) {
       : serviceType === "labor_only" && laborHelpType === "unloading_only"
         ? unloadingTeamOptions
         : moveTeamOptions;
+  const recommendedTeamOptionId = getRecommendedTeamOptionId({
+    serviceType,
+    laborHelpType,
+    moveType,
+    homeSize,
+    storageUnitSize,
+    officeHeadcount,
+  });
   const selectedTeamOption =
-    teamOptions.find((option) => option.id === teamOption) ?? teamOptions[0];
+    teamOptions.find((option) => option.id === teamOption) ??
+    teamOptions.find((option) => option.id === recommendedTeamOptionId) ??
+    teamOptions[0];
   const laborerCountLabel = getLaborerCountLabel(laborHelpType, selectedTeamOption.title);
   const additionalTimeRate = formatCurrency(selectedTeamOption.rate);
   const laborHelpLabel = getLaborHelpLabel(laborHelpType);
@@ -1338,7 +1348,7 @@ export function BookingForm({ config, isPreview = false }: BookingFormProps) {
         homeSize,
         storageUnitSize,
         officeHeadcount,
-        teamOption,
+        teamOption: teamOption ?? selectedTeamOption.id,
       },
       form: formValues,
       extras: {
@@ -2594,7 +2604,7 @@ export function BookingForm({ config, isPreview = false }: BookingFormProps) {
               <div>
                 <div className="text-sm font-medium text-gray-900">{option.title}</div>
                 <div className="text-xs text-gray-500">{option.detail}</div>
-                {option.recommended && (
+                {option.id === recommendedTeamOptionId && (
                   <span className="inline-flex items-center text-[10px] font-semibold bg-gray-900 text-white px-2 py-0.5 rounded mt-2">
                     Recommended
                   </span>
@@ -3929,6 +3939,86 @@ function getEstimateLaborRange({
   const minLabor = Math.max(range?.minLabor ?? minimumHours, minimumHours);
   const maxLabor = Math.max(range?.maxLabor ?? minLabor, minLabor);
   return { minLabor, maxLabor };
+}
+
+function getRecommendedTeamOptionId({
+  serviceType,
+  laborHelpType,
+  moveType,
+  homeSize,
+  storageUnitSize,
+  officeHeadcount,
+}: {
+  serviceType: ServiceType;
+  laborHelpType: LaborHelpType;
+  moveType: MoveType;
+  homeSize: HomeSize;
+  storageUnitSize: StorageUnitSize;
+  officeHeadcount: OfficeHeadcount;
+}): TeamOptionKey | null {
+  if (!serviceType) return null;
+  if (serviceType === "labor_only" && !laborHelpType) return null;
+
+  const scale = getMoveScale(moveType, homeSize, storageUnitSize, officeHeadcount);
+
+  if (serviceType === "labor_only" && laborHelpType === "loading_only") {
+    return scale >= 3 ? "loaders-3" : "loaders-2";
+  }
+
+  if (serviceType === "labor_only" && laborHelpType === "unloading_only") {
+    return scale >= 3 ? "3-1" : "2-1";
+  }
+
+  if (scale <= 1) return "2-1";
+  if (scale === 2) return "3-1";
+  if (scale === 3) return "4-1";
+  if (scale === 4) return "4-2";
+  return "5-2";
+}
+
+function getMoveScale(
+  moveType: MoveType,
+  homeSize: HomeSize,
+  storageUnitSize: StorageUnitSize,
+  officeHeadcount: OfficeHeadcount
+): number {
+  if (moveType === "home") {
+    const homeScale: Record<NonNullable<HomeSize>, number> = {
+      studio: 1,
+      "1bed": 1,
+      "2bed": 2,
+      "3bed": 3,
+      "4bed": 4,
+      "5bed": 5,
+    };
+    return homeSize ? homeScale[homeSize] : 1;
+  }
+
+  if (moveType === "storage") {
+    const storageScale: Record<NonNullable<StorageUnitSize>, number> = {
+      "25": 1,
+      "50": 1,
+      "75": 2,
+      "100": 2,
+      "200": 3,
+      "300": 5,
+    };
+    return storageUnitSize ? storageScale[storageUnitSize] : 1;
+  }
+
+  if (moveType === "office") {
+    const officeScale: Record<NonNullable<OfficeHeadcount>, number> = {
+      "1-4": 1,
+      "5-9": 2,
+      "10-19": 3,
+      "20-49": 4,
+      "50-99": 5,
+      "over-100": 5,
+    };
+    return officeHeadcount ? officeScale[officeHeadcount] : 1;
+  }
+
+  return 1;
 }
 
 function formatEstimateRange(minValue: number, maxValue: number): string {
