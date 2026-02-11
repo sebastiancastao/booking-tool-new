@@ -262,7 +262,7 @@ export const DEFAULT_PRICING_CONFIG: PricingConfig = {
       "over-100": { minLabor: 10, maxLabor: 12 },
     },
   },
-  travelRate: 0.75, // Rate multiplier for travel time (e.g., 0.75 means 75% of hourly rate)
+  travelRate: 1, // Rate multiplier for travel time (1 means 100% of hourly rate)
   pricePerMile: 2.5, // Additional charge per mile
   protectionCharge: 15,
   accessibility: {

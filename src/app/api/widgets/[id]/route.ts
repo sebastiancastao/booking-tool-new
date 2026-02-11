@@ -46,6 +46,12 @@ export async function GET(
       supabase.from("pricing_walking_distance").select("*").eq("widget_id", id),
     ]);
 
+    const dbTravelRate = travelResult.data?.travel_rate;
+    const normalizedTravelRate =
+      typeof dbTravelRate === "number" && Math.abs(dbTravelRate - 0.75) < 0.000001
+        ? 1
+        : dbTravelRate;
+
     // Build pricing config from database data
     const pricing = {
       teams: {
@@ -58,7 +64,7 @@ export async function GET(
         storage: { ...DEFAULT_PRICING_CONFIG.estimateLabor.storage } as Record<string, { minLabor: number; maxLabor: number }>,
         office: { ...DEFAULT_PRICING_CONFIG.estimateLabor.office } as Record<string, { minLabor: number; maxLabor: number }>,
       },
-      travelRate: travelResult.data?.travel_rate ?? DEFAULT_PRICING_CONFIG.travelRate,
+      travelRate: normalizedTravelRate ?? DEFAULT_PRICING_CONFIG.travelRate,
       pricePerMile: travelResult.data?.price_per_mile ?? DEFAULT_PRICING_CONFIG.pricePerMile,
       protectionCharge: protectionResult.data?.protection_charge ?? DEFAULT_PRICING_CONFIG.protectionCharge,
       accessibility: {

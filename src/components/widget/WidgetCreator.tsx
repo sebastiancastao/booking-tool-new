@@ -1031,7 +1031,7 @@ export function WidgetCreator({ widgetId }: WidgetCreatorProps = {}) {
                           className="mt-1"
                         />
                         <p className="text-xs text-gray-500 mt-1">
-                          % of hourly rate for travel time (e.g., 0.75 = 75%)
+                          % of hourly rate for travel time (1.0 = 100%)
                         </p>
                       </div>
                       <div>

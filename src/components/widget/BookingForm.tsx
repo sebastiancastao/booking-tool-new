@@ -581,19 +581,9 @@ export function BookingForm({ config, isPreview = false }: BookingFormProps) {
   const travelHours = distanceInfo?.travelHours ?? 0;
   const distanceMiles = distanceInfo?.miles ?? 0;
 
-  // Labor cost = labor hours * hourly rate
-  const minLaborCost = estimateLaborRange.minLabor * selectedTeamOption.rate;
-  const maxLaborCost = estimateLaborRange.maxLabor * selectedTeamOption.rate;
-
-  // Travel cost = travel hours * hourly rate * travel rate multiplier
-  const travelCost = travelHours * selectedTeamOption.rate * pricingConfig.travelRate;
-
-  // Distance cost = miles * price per mile
-  const distanceCost = distanceMiles * pricingConfig.pricePerMile;
-
-  // Base estimate before accessibility adjustments
-  const baseMinEstimate = minLaborCost + travelCost + distanceCost;
-  const baseMaxEstimate = maxLaborCost + travelCost + distanceCost;
+  // Base labor hours from move size
+  const baseMinLaborHours = estimateLaborRange.minLabor;
+  const baseMaxLaborHours = estimateLaborRange.maxLabor;
 
   // Accessibility surcharge rates are configured as percentages in pricing.
   const originElevatorSurchargeRate =
@@ -618,19 +608,37 @@ export function BookingForm({ config, isPreview = false }: BookingFormProps) {
     destinationElevatorSurchargeRate +
     destinationStairsSurchargeRate;
 
+  // Elevator/stairs surcharge is applied as extra labor hours.
+  const surchargeMinLaborHours = baseMinLaborHours * accessibilitySurchargeRate;
+  const surchargeMaxLaborHours = baseMaxLaborHours * accessibilitySurchargeRate;
+  const minLaborHours = baseMinLaborHours + surchargeMinLaborHours;
+  const maxLaborHours = baseMaxLaborHours + surchargeMaxLaborHours;
+
+  // Labor cost = adjusted labor hours * hourly rate
+  const minLaborCost = minLaborHours * selectedTeamOption.rate;
+  const maxLaborCost = maxLaborHours * selectedTeamOption.rate;
+
+  // Travel cost = travel hours * hourly rate * travel rate multiplier
+  const travelCost = travelHours * selectedTeamOption.rate * pricingConfig.travelRate;
+
+  // Distance cost = miles * price per mile
+  const distanceCost = distanceMiles * pricingConfig.pricePerMile;
+
+  // Subtotal before flat accessibility/protection adjustments
+  const baseMinEstimate = minLaborCost + travelCost + distanceCost;
+  const baseMaxEstimate = maxLaborCost + travelCost + distanceCost;
+
   // Accessibility costs (origin)
   const originWalkCost = pricingConfig.accessibility.walkingDistance[originWalk as "short" | "medium" | "long"] ?? 0;
 
   // Accessibility costs (destination)
   const destinationWalkCost = pricingConfig.accessibility.walkingDistance[destinationWalk as "short" | "medium" | "long"] ?? 0;
 
-  // Total accessibility cost (percent surcharge + walking distance flats)
+  // Total accessibility cost (walking distance flats only)
   const walkingAccessibilityCost = originWalkCost + destinationWalkCost;
-  const accessibilityMinCost =
-    baseMinEstimate * accessibilitySurchargeRate + walkingAccessibilityCost;
-  const accessibilityMaxCost =
-    baseMaxEstimate * accessibilitySurchargeRate + walkingAccessibilityCost;
-  const accessibilityCost = accessibilityMaxCost;
+  const accessibilityMinCost = walkingAccessibilityCost;
+  const accessibilityMaxCost = walkingAccessibilityCost;
+  const accessibilityCost = walkingAccessibilityCost;
 
   // Protection charge
   const protectionCost = additionalProtectionSelected ? pricingConfig.protectionCharge : 0;
@@ -647,10 +655,10 @@ export function BookingForm({ config, isPreview = false }: BookingFormProps) {
   const promoSavingsMax = Math.max(0, estimateMaxTotal - discountedMaxTotal);
 
   // Breakdown for display
-  const laborLabel = `${estimateLaborRange.minLabor}-${estimateLaborRange.maxLabor} hrs labor`;
+  const laborLabel = `${formatHoursRange(minLaborHours, maxLaborHours)} labor`;
   const travelLabel = travelHours > 0 ? `${Math.round(travelHours * 60)} min travel` : null;
   const distanceLabel = distanceMiles > 0 ? `${distanceMiles} mi` : null;
-  const accessibilityLabel = accessibilityMaxCost > 0
+  const accessibilityLabel = walkingAccessibilityCost > 0
     ? `+${formatEstimateRange(accessibilityMinCost, accessibilityMaxCost)} access`
     : null;
   const accessibilityBreakdownParts: string[] = [];
@@ -1357,8 +1365,12 @@ export function BookingForm({ config, isPreview = false }: BookingFormProps) {
         customFieldValues,
       },
       estimate: {
-        minLaborHours: estimateLaborRange.minLabor,
-        maxLaborHours: estimateLaborRange.maxLabor,
+        minLaborHours,
+        maxLaborHours,
+        baseMinLaborHours,
+        baseMaxLaborHours,
+        surchargeMinLaborHours,
+        surchargeMaxLaborHours,
         hourlyRate: selectedTeamOption.rate,
         travelHours,
         distanceMiles,
@@ -3122,7 +3134,7 @@ export function BookingForm({ config, isPreview = false }: BookingFormProps) {
                   </div>
                   <div className="mt-2 rounded-md border border-gray-100 bg-gray-50 p-3 text-xs text-gray-700 space-y-1">
                     <div>
-                      Labor: {formatHoursRange(estimateLaborRange.minLabor, estimateLaborRange.maxLabor)} x {formatCurrency(selectedTeamOption.rate)}/hr = {formatEstimateRange(minLaborCost, maxLaborCost)}
+                      Labor: ({formatHoursRange(baseMinLaborHours, baseMaxLaborHours)} base + {formatHoursRange(surchargeMinLaborHours, surchargeMaxLaborHours)} access) = {formatHoursRange(minLaborHours, maxLaborHours)} x {formatCurrency(selectedTeamOption.rate)}/hr = {formatEstimateRange(minLaborCost, maxLaborCost)}
                     </div>
                     <div>
                       Travel: {formatNumber(travelHours)} hrs x {formatCurrency(selectedTeamOption.rate)}/hr x {formatPercent(pricingConfig.travelRate)} = {formatCurrency(travelCost)}
@@ -3137,7 +3149,10 @@ export function BookingForm({ config, isPreview = false }: BookingFormProps) {
                       Access surcharge: {accessibilityBreakdownLabel}
                     </div>
                     <div>
-                      Access total: ({formatEstimateRange(baseMinEstimate, baseMaxEstimate)} x {formatPercent(accessibilitySurchargeRate)}) + walking {formatCurrency(walkingAccessibilityCost)} = {formatEstimateRange(accessibilityMinCost, accessibilityMaxCost)}
+                      Access hours added: {formatHoursRange(surchargeMinLaborHours, surchargeMaxLaborHours)} ({formatPercent(accessibilitySurchargeRate)} of base labor hours)
+                    </div>
+                    <div>
+                      Walking access (flat): {formatCurrency(walkingAccessibilityCost)}
                     </div>
                     <div>
                       Protection: {formatCurrency(protectionCost)}
