@@ -534,8 +534,6 @@ export function BookingForm({ config, isPreview = false }: BookingFormProps) {
   const additionalTimeRate = formatCurrency(selectedTeamOption.rate);
   const laborHelpLabel = getLaborHelpLabel(laborHelpType);
   const moveActivityLabel = getMoveActivityLabel(serviceType, laborHelpType);
-  const additionalProtectionSelected =
-    !!insuranceOptionValue && insuranceOptionValue !== "none";
   const storageMoveOutValue =
     typeof customFieldValues.storageMoveOutDate === "string"
       ? customFieldValues.storageMoveOutDate
@@ -640,12 +638,12 @@ export function BookingForm({ config, isPreview = false }: BookingFormProps) {
   const accessibilityMaxCost = walkingAccessibilityCost;
   const accessibilityCost = walkingAccessibilityCost;
 
-  // Protection charge
-  const protectionCost = additionalProtectionSelected ? pricingConfig.protectionCharge : 0;
+  // Protection is intentionally excluded from estimate totals.
+  const protectionCost = 0;
 
   // Total estimates
-  const estimateMinTotal = baseMinEstimate + accessibilityMinCost + protectionCost;
-  const estimateMaxTotal = baseMaxEstimate + accessibilityMaxCost + protectionCost;
+  const estimateMinTotal = baseMinEstimate + accessibilityMinCost;
+  const estimateMaxTotal = baseMaxEstimate + accessibilityMaxCost;
   const estimateLabel = formatEstimateRange(estimateMinTotal, estimateMaxTotal);
   const appliedPromo = promoValidation.status === "valid" ? promoValidation.promo : undefined;
   const discountedMinTotal = appliedPromo ? applyPromoDiscount(estimateMinTotal, appliedPromo) : estimateMinTotal;
@@ -3154,9 +3152,11 @@ export function BookingForm({ config, isPreview = false }: BookingFormProps) {
                     <div>
                       Walking access (flat): {formatCurrency(walkingAccessibilityCost)}
                     </div>
-                    <div>
-                      Protection: {formatCurrency(protectionCost)}
-                    </div>
+                    {!!insuranceOptionValue && insuranceOptionValue !== "none" && (
+                      <div>
+                        Protection selected: not included in estimate total
+                      </div>
+                    )}
                     <div>
                       Subtotal before promo = {formatEstimateRange(estimateMinTotal, estimateMaxTotal)}
                     </div>
