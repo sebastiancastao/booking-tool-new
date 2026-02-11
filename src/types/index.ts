@@ -214,7 +214,7 @@ export interface PricingConfig {
   accessibility: {
     noElevatorCharge: number; // Percentage surcharge (e.g., 10 means +10%)
     stairsCharge: number; // Percentage surcharge when stairs are present
-    walkingDistance: Record<"short" | "medium" | "long", number>;
+    walkingDistance: Record<"short" | "medium" | "long", number>; // Percentage surcharge by walk distance
   };
 }
 

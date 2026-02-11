@@ -1074,7 +1074,7 @@ export function WidgetCreator({ widgetId }: WidgetCreatorProps = {}) {
                     <div>
                       <h3 className="font-medium">Accessibility Charges</h3>
                       <p className="text-xs text-gray-500 mt-1">
-                        No-elevator and stairs are percentage surcharges on the base estimate.
+                        No-elevator, stairs, and walking distance are percentage surcharges on labor.
                       </p>
                     </div>
 
@@ -1119,11 +1119,11 @@ export function WidgetCreator({ widgetId }: WidgetCreatorProps = {}) {
                         <Label className="text-xs font-semibold">Walking distance from parking</Label>
                         <div className="grid grid-cols-3 gap-3 mt-2 max-w-md">
                           <div>
-                            <Label className="text-xs">Short &lt;100ft ($)</Label>
+                            <Label className="text-xs">Short &lt;100ft (%)</Label>
                             <Input
                               type="number"
                               min="0"
-                              step="5"
+                              step="0.5"
                               value={config.pricing.accessibility.walkingDistance.short}
                               onChange={(event) =>
                                 updateWalkingDistanceCharge("short", Number(event.target.value))
@@ -1132,11 +1132,11 @@ export function WidgetCreator({ widgetId }: WidgetCreatorProps = {}) {
                             />
                           </div>
                           <div>
-                            <Label className="text-xs">Medium 100-300ft ($)</Label>
+                            <Label className="text-xs">Medium 100-300ft (%)</Label>
                             <Input
                               type="number"
                               min="0"
-                              step="5"
+                              step="0.5"
                               value={config.pricing.accessibility.walkingDistance.medium}
                               onChange={(event) =>
                                 updateWalkingDistanceCharge("medium", Number(event.target.value))
@@ -1145,11 +1145,11 @@ export function WidgetCreator({ widgetId }: WidgetCreatorProps = {}) {
                             />
                           </div>
                           <div>
-                            <Label className="text-xs">Long 300ft+ ($)</Label>
+                            <Label className="text-xs">Long 300ft+ (%)</Label>
                             <Input
                               type="number"
                               min="0"
-                              step="5"
+                              step="0.5"
                               value={config.pricing.accessibility.walkingDistance.long}
                               onChange={(event) =>
                                 updateWalkingDistanceCharge("long", Number(event.target.value))

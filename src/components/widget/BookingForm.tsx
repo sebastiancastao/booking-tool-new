@@ -605,10 +605,18 @@ export function BookingForm({ config, isPreview = false }: BookingFormProps) {
     originStairsSurchargeRate +
     destinationElevatorSurchargeRate +
     destinationStairsSurchargeRate;
+  const originWalkSurchargeRate = normalizeSurchargePercent(
+    pricingConfig.accessibility.walkingDistance[originWalk as "short" | "medium" | "long"] ?? 0
+  );
+  const destinationWalkSurchargeRate = normalizeSurchargePercent(
+    pricingConfig.accessibility.walkingDistance[destinationWalk as "short" | "medium" | "long"] ?? 0
+  );
+  const totalAccessibilitySurchargeRate =
+    accessibilitySurchargeRate + originWalkSurchargeRate + destinationWalkSurchargeRate;
 
-  // Elevator/stairs surcharge is applied as extra labor hours.
-  const surchargeMinLaborHours = baseMinLaborHours * accessibilitySurchargeRate;
-  const surchargeMaxLaborHours = baseMaxLaborHours * accessibilitySurchargeRate;
+  // Accessibility surcharge is applied as extra labor hours.
+  const surchargeMinLaborHours = baseMinLaborHours * totalAccessibilitySurchargeRate;
+  const surchargeMaxLaborHours = baseMaxLaborHours * totalAccessibilitySurchargeRate;
   const minLaborHours = baseMinLaborHours + surchargeMinLaborHours;
   const maxLaborHours = baseMaxLaborHours + surchargeMaxLaborHours;
 
@@ -626,17 +634,10 @@ export function BookingForm({ config, isPreview = false }: BookingFormProps) {
   const baseMinEstimate = minLaborCost + travelCost + distanceCost;
   const baseMaxEstimate = maxLaborCost + travelCost + distanceCost;
 
-  // Accessibility costs (origin)
-  const originWalkCost = pricingConfig.accessibility.walkingDistance[originWalk as "short" | "medium" | "long"] ?? 0;
-
-  // Accessibility costs (destination)
-  const destinationWalkCost = pricingConfig.accessibility.walkingDistance[destinationWalk as "short" | "medium" | "long"] ?? 0;
-
-  // Total accessibility cost (walking distance flats only)
-  const walkingAccessibilityCost = originWalkCost + destinationWalkCost;
-  const accessibilityMinCost = walkingAccessibilityCost;
-  const accessibilityMaxCost = walkingAccessibilityCost;
-  const accessibilityCost = walkingAccessibilityCost;
+  // Total accessibility cost (no flat walking charges).
+  const accessibilityMinCost = 0;
+  const accessibilityMaxCost = 0;
+  const accessibilityCost = 0;
 
   // Protection is intentionally excluded from estimate totals.
   const protectionCost = 0;
@@ -656,8 +657,8 @@ export function BookingForm({ config, isPreview = false }: BookingFormProps) {
   const laborLabel = `${formatHoursRange(minLaborHours, maxLaborHours)} labor`;
   const travelLabel = travelHours > 0 ? `${Math.round(travelHours * 60)} min travel` : null;
   const distanceLabel = distanceMiles > 0 ? `${distanceMiles} mi` : null;
-  const accessibilityLabel = walkingAccessibilityCost > 0
-    ? `+${formatEstimateRange(accessibilityMinCost, accessibilityMaxCost)} access`
+  const accessibilityLabel = totalAccessibilitySurchargeRate > 0
+    ? `+${formatHoursRange(surchargeMinLaborHours, surchargeMaxLaborHours)} access hours`
     : null;
   const accessibilityBreakdownParts: string[] = [];
   if (originElevatorSurchargeRate > 0) {
@@ -666,11 +667,17 @@ export function BookingForm({ config, isPreview = false }: BookingFormProps) {
   if (originStairsSurchargeRate > 0) {
     accessibilityBreakdownParts.push(`Origin stairs ${formatPercent(originStairsSurchargeRate)}`);
   }
+  if (originWalkSurchargeRate > 0) {
+    accessibilityBreakdownParts.push(`Origin walk (${originWalk}) ${formatPercent(originWalkSurchargeRate)}`);
+  }
   if (destinationElevatorSurchargeRate > 0) {
     accessibilityBreakdownParts.push(`Destination no elevator ${formatPercent(destinationElevatorSurchargeRate)}`);
   }
   if (destinationStairsSurchargeRate > 0) {
     accessibilityBreakdownParts.push(`Destination stairs ${formatPercent(destinationStairsSurchargeRate)}`);
+  }
+  if (destinationWalkSurchargeRate > 0) {
+    accessibilityBreakdownParts.push(`Destination walk (${destinationWalk}) ${formatPercent(destinationWalkSurchargeRate)}`);
   }
   const accessibilityBreakdownLabel = accessibilityBreakdownParts.length > 0
     ? accessibilityBreakdownParts.join(" + ")
@@ -1377,7 +1384,7 @@ export function BookingForm({ config, isPreview = false }: BookingFormProps) {
         accessibilityCost,
         accessibilityMinCost,
         accessibilityMaxCost,
-        accessibilitySurchargeRate,
+        accessibilitySurchargeRate: totalAccessibilitySurchargeRate,
         protectionCost,
         minLaborCost,
         maxLaborCost,
@@ -3147,10 +3154,7 @@ export function BookingForm({ config, isPreview = false }: BookingFormProps) {
                       Access surcharge: {accessibilityBreakdownLabel}
                     </div>
                     <div>
-                      Access hours added: {formatHoursRange(surchargeMinLaborHours, surchargeMaxLaborHours)} ({formatPercent(accessibilitySurchargeRate)} of base labor hours)
-                    </div>
-                    <div>
-                      Walking access (flat): {formatCurrency(walkingAccessibilityCost)}
+                      Access hours added: {formatHoursRange(surchargeMinLaborHours, surchargeMaxLaborHours)} ({formatPercent(totalAccessibilitySurchargeRate)} of base labor hours)
                     </div>
                     {!!insuranceOptionValue && insuranceOptionValue !== "none" && (
                       <div>
