@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { DEFAULT_PRICING_CONFIG } from "@/types";
 
 export async function GET(
   request: NextRequest,
@@ -48,29 +49,25 @@ export async function GET(
     // Build pricing config from database data
     const pricing = {
       teams: {
-        move: {} as Record<string, { rate: number; minimumHours: number }>,
-        loaders: {} as Record<string, { rate: number; minimumHours: number }>,
-        unloading: {} as Record<string, { rate: number; minimumHours: number }>,
+        move: { ...DEFAULT_PRICING_CONFIG.teams.move } as Record<string, { rate: number; minimumHours: number }>,
+        loaders: { ...DEFAULT_PRICING_CONFIG.teams.loaders } as Record<string, { rate: number; minimumHours: number }>,
+        unloading: { ...DEFAULT_PRICING_CONFIG.teams.unloading } as Record<string, { rate: number; minimumHours: number }>,
       },
       estimateLabor: {
-        home: {} as Record<string, { minLabor: number; maxLabor: number }>,
-        storage: {} as Record<string, { minLabor: number; maxLabor: number }>,
-        office: {} as Record<string, { minLabor: number; maxLabor: number }>,
+        home: { ...DEFAULT_PRICING_CONFIG.estimateLabor.home } as Record<string, { minLabor: number; maxLabor: number }>,
+        storage: { ...DEFAULT_PRICING_CONFIG.estimateLabor.storage } as Record<string, { minLabor: number; maxLabor: number }>,
+        office: { ...DEFAULT_PRICING_CONFIG.estimateLabor.office } as Record<string, { minLabor: number; maxLabor: number }>,
       },
-      travelRate: travelResult.data?.travel_rate || 0.75,
-      pricePerMile: travelResult.data?.price_per_mile || 2.5,
-      protectionCharge: protectionResult.data?.protection_charge || 15,
+      travelRate: travelResult.data?.travel_rate ?? DEFAULT_PRICING_CONFIG.travelRate,
+      pricePerMile: travelResult.data?.price_per_mile ?? DEFAULT_PRICING_CONFIG.pricePerMile,
+      protectionCharge: protectionResult.data?.protection_charge ?? DEFAULT_PRICING_CONFIG.protectionCharge,
       accessibility: {
-        noElevatorCharge: accessibilityResult.data?.no_elevator_charge || 25,
-        stairsCharge: {
-          "1-2": 0,
-          "3-4": 0,
-          "5+": 0,
-        } as Record<string, number>,
+        noElevatorCharge:
+          accessibilityResult.data?.no_elevator_charge ??
+          DEFAULT_PRICING_CONFIG.accessibility.noElevatorCharge,
+        stairsCharge: DEFAULT_PRICING_CONFIG.accessibility.stairsCharge,
         walkingDistance: {
-          short: 0,
-          medium: 0,
-          long: 0,
+          ...DEFAULT_PRICING_CONFIG.accessibility.walkingDistance,
         } as Record<string, number>,
       },
     };
@@ -79,8 +76,14 @@ export async function GET(
     if (teamsResult.data) {
       for (const team of teamsResult.data) {
         const group = team.team_group as "move" | "loaders" | "unloading";
-        if (pricing.teams[group]) {
-          pricing.teams[group][team.team_option] = {
+        if (!pricing.teams[group]) continue;
+
+        const normalizedTeamOption =
+          group === "move" && team.team_option === "3-2"
+            ? "4-1"
+            : team.team_option;
+        if (Object.prototype.hasOwnProperty.call(pricing.teams[group], normalizedTeamOption)) {
+          pricing.teams[group][normalizedTeamOption] = {
             rate: parseFloat(team.rate),
             minimumHours: parseFloat(team.minimum_hours),
           };
@@ -103,8 +106,12 @@ export async function GET(
 
     // Populate stairs charges
     if (stairsResult.data) {
-      for (const stair of stairsResult.data) {
-        pricing.accessibility.stairsCharge[stair.stairs_range] = parseFloat(stair.charge);
+      const stairValues = stairsResult.data
+        .map((stair) => parseFloat(stair.charge))
+        .filter((value) => Number.isFinite(value));
+      if (stairValues.length > 0) {
+        // Backward compatibility for older records with multiple stair ranges.
+        pricing.accessibility.stairsCharge = Math.max(...stairValues);
       }
     }
 

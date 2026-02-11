@@ -193,7 +193,7 @@ export type PricingLaborEstimate = {
 
 export interface PricingConfig {
   teams: {
-    move: Record<"2-1" | "3-1" | "3-2" | "4-2", PricingTeamOption>;
+    move: Record<"2-1" | "3-1" | "4-1" | "4-2" | "5-2", PricingTeamOption>;
     loaders: Record<"loaders-2" | "loaders-3", PricingTeamOption>;
     unloading: Record<"2-1" | "3-1", PricingTeamOption>;
   };
@@ -212,8 +212,8 @@ export interface PricingConfig {
   pricePerMile: number;
   protectionCharge: number;
   accessibility: {
-    noElevatorCharge: number;
-    stairsCharge: Record<"1-2" | "3-4" | "5+", number>;
+    noElevatorCharge: number; // Percentage surcharge (e.g., 10 means +10%)
+    stairsCharge: number; // Percentage surcharge when stairs are present
     walkingDistance: Record<"short" | "medium" | "long", number>;
   };
 }
@@ -223,8 +223,9 @@ export const DEFAULT_PRICING_CONFIG: PricingConfig = {
     move: {
       "2-1": { rate: 120, minimumHours: 2 },
       "3-1": { rate: 180, minimumHours: 3 },
-      "3-2": { rate: 220, minimumHours: 2 },
+      "4-1": { rate: 220, minimumHours: 2 },
       "4-2": { rate: 300, minimumHours: 2 },
+      "5-2": { rate: 360, minimumHours: 2 },
     },
     loaders: {
       "loaders-2": { rate: 120, minimumHours: 2 },
@@ -265,12 +266,8 @@ export const DEFAULT_PRICING_CONFIG: PricingConfig = {
   pricePerMile: 2.5, // Additional charge per mile
   protectionCharge: 15,
   accessibility: {
-    noElevatorCharge: 25, // Charge when no elevator available (per location)
-    stairsCharge: {
-      "1-2": 0,
-      "3-4": 25,
-      "5+": 50,
-    },
+    noElevatorCharge: 10, // +10% when no elevator is available (per location)
+    stairsCharge: 10,
     walkingDistance: {
       short: 0,
       medium: 15,

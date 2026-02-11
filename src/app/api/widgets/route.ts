@@ -14,10 +14,11 @@ async function savePricingData(
   const teamInserts = [];
   for (const [group, teams] of Object.entries(pricing.teams)) {
     for (const [option, data] of Object.entries(teams)) {
+      const teamOption = group === "move" && option === "3-2" ? "4-1" : option;
       teamInserts.push({
         widget_id: widgetId,
         team_group: group,
-        team_option: option,
+        team_option: teamOption,
         rate: data.rate,
         minimum_hours: data.minimumHours,
       });
@@ -92,21 +93,19 @@ async function savePricingData(
   else console.log("Accessibility pricing saved");
 
   // Save stairs charges
-  const stairsInserts = Object.entries(pricing.accessibility.stairsCharge).map(
-    ([range, charge]) => ({
-      widget_id: widgetId,
-      stairs_range: range,
-      charge: charge,
-    })
-  );
-
   const { error: stairsDeleteError } = await supabase.from("pricing_stairs").delete().eq("widget_id", widgetId);
   if (stairsDeleteError) console.error("Error deleting stairs pricing:", stairsDeleteError);
 
-  if (stairsInserts.length > 0) {
-    const { error: stairsInsertError } = await supabase.from("pricing_stairs").insert(stairsInserts);
-    if (stairsInsertError) console.error("Error inserting stairs pricing:", stairsInsertError);
-    else console.log("Stairs pricing saved:", stairsInserts.length, "records");
+  const { error: stairsInsertError } = await supabase.from("pricing_stairs").insert({
+    widget_id: widgetId,
+    stairs_range: "1-2",
+    charge: pricing.accessibility.stairsCharge,
+  });
+
+  if (stairsInsertError) {
+    console.error("Error inserting stairs pricing:", stairsInsertError);
+  } else {
+    console.log("Stairs pricing saved: 1 record");
   }
 
   // Save walking distance charges

@@ -28,7 +28,7 @@ import {
   DollarSign,
   Loader2,
 } from "lucide-react";
-import type { CustomField, WidgetConfig } from "@/types";
+import type { CustomField } from "@/types";
 
 const FONT_OPTIONS = [
   "Inter",
@@ -43,8 +43,9 @@ const FONT_OPTIONS = [
 const MOVE_TEAM_OPTIONS = [
   { id: "2-1", label: "2 movers, 1 truck" },
   { id: "3-1", label: "3 movers, 1 truck" },
-  { id: "3-2", label: "3 movers, 2 trucks" },
+  { id: "4-1", label: "4 movers, 1 truck" },
   { id: "4-2", label: "4 movers, 2 trucks" },
+  { id: "5-2", label: "5 movers, 2 trucks" },
 ] as const;
 
 const LOADER_TEAM_OPTIONS = [
@@ -203,9 +204,8 @@ export function WidgetCreator({ widgetId }: WidgetCreatorProps = {}) {
     });
   };
 
-  const updateAccessibility = (
-    field: "noElevatorCharge" | "stairsCharge" | "walkingDistance",
-    key: string | null,
+  const updateAccessibilityPercent = (
+    field: "noElevatorCharge" | "stairsCharge",
     value: number
   ) => {
     if (field === "noElevatorCharge") {
@@ -218,33 +218,36 @@ export function WidgetCreator({ widgetId }: WidgetCreatorProps = {}) {
           },
         },
       });
-    } else if (field === "stairsCharge" && key) {
-      updateConfig({
-        pricing: {
-          ...config.pricing,
-          accessibility: {
-            ...config.pricing.accessibility,
-            stairsCharge: {
-              ...config.pricing.accessibility.stairsCharge,
-              [key]: value,
-            },
-          },
-        },
-      });
-    } else if (field === "walkingDistance" && key) {
-      updateConfig({
-        pricing: {
-          ...config.pricing,
-          accessibility: {
-            ...config.pricing.accessibility,
-            walkingDistance: {
-              ...config.pricing.accessibility.walkingDistance,
-              [key]: value,
-            },
-          },
-        },
-      });
+      return;
     }
+
+    updateConfig({
+      pricing: {
+        ...config.pricing,
+        accessibility: {
+          ...config.pricing.accessibility,
+          stairsCharge: value,
+        },
+      },
+    });
+  };
+
+  const updateWalkingDistanceCharge = (
+    key: "short" | "medium" | "long",
+    value: number
+  ) => {
+    updateConfig({
+      pricing: {
+        ...config.pricing,
+        accessibility: {
+          ...config.pricing.accessibility,
+          walkingDistance: {
+            ...config.pricing.accessibility.walkingDistance,
+            [key]: value,
+          },
+        },
+      },
+    });
   };
 
   const handleAddCustomField = () => {
@@ -1071,70 +1074,44 @@ export function WidgetCreator({ widgetId }: WidgetCreatorProps = {}) {
                     <div>
                       <h3 className="font-medium">Accessibility Charges</h3>
                       <p className="text-xs text-gray-500 mt-1">
-                        Extra charges based on location accessibility (applied per location).
+                        No-elevator and stairs are percentage surcharges on the base estimate.
                       </p>
                     </div>
 
                     <div className="space-y-4">
                       <div className="max-w-xs">
-                        <Label className="text-xs">No elevator charge ($)</Label>
+                        <Label className="text-xs">No elevator surcharge (%)</Label>
                         <Input
                           type="number"
                           min="0"
-                          step="5"
+                          step="0.5"
                           value={config.pricing.accessibility.noElevatorCharge}
                           onChange={(event) =>
-                            updateAccessibility("noElevatorCharge", null, Number(event.target.value))
+                            updateAccessibilityPercent("noElevatorCharge", Number(event.target.value))
                           }
                           className="mt-1"
                         />
                         <p className="text-xs text-gray-500 mt-1">
-                          Charged when elevator is not available
+                          Applied per location with no elevator
                         </p>
                       </div>
 
                       <div>
-                        <Label className="text-xs font-semibold">Flights of stairs</Label>
-                        <div className="grid grid-cols-3 gap-3 mt-2 max-w-md">
-                          <div>
-                            <Label className="text-xs">1-2 flights ($)</Label>
-                            <Input
-                              type="number"
-                              min="0"
-                              step="5"
-                              value={config.pricing.accessibility.stairsCharge["1-2"]}
-                              onChange={(event) =>
-                                updateAccessibility("stairsCharge", "1-2", Number(event.target.value))
-                              }
-                              className="mt-1"
-                            />
-                          </div>
-                          <div>
-                            <Label className="text-xs">3-4 flights ($)</Label>
-                            <Input
-                              type="number"
-                              min="0"
-                              step="5"
-                              value={config.pricing.accessibility.stairsCharge["3-4"]}
-                              onChange={(event) =>
-                                updateAccessibility("stairsCharge", "3-4", Number(event.target.value))
-                              }
-                              className="mt-1"
-                            />
-                          </div>
-                          <div>
-                            <Label className="text-xs">5+ flights ($)</Label>
-                            <Input
-                              type="number"
-                              min="0"
-                              step="5"
-                              value={config.pricing.accessibility.stairsCharge["5+"]}
-                              onChange={(event) =>
-                                updateAccessibility("stairsCharge", "5+", Number(event.target.value))
-                              }
-                              className="mt-1"
-                            />
-                          </div>
+                        <Label className="text-xs font-semibold">Stairs surcharge (%)</Label>
+                        <div className="max-w-xs mt-2">
+                          <Input
+                            type="number"
+                            min="0"
+                            step="0.5"
+                            value={config.pricing.accessibility.stairsCharge}
+                            onChange={(event) =>
+                              updateAccessibilityPercent("stairsCharge", Number(event.target.value))
+                            }
+                            className="mt-1"
+                          />
+                          <p className="text-xs text-gray-500 mt-1">
+                            Applied per location when stairs are present
+                          </p>
                         </div>
                       </div>
 
@@ -1149,7 +1126,7 @@ export function WidgetCreator({ widgetId }: WidgetCreatorProps = {}) {
                               step="5"
                               value={config.pricing.accessibility.walkingDistance.short}
                               onChange={(event) =>
-                                updateAccessibility("walkingDistance", "short", Number(event.target.value))
+                                updateWalkingDistanceCharge("short", Number(event.target.value))
                               }
                               className="mt-1"
                             />
@@ -1162,7 +1139,7 @@ export function WidgetCreator({ widgetId }: WidgetCreatorProps = {}) {
                               step="5"
                               value={config.pricing.accessibility.walkingDistance.medium}
                               onChange={(event) =>
-                                updateAccessibility("walkingDistance", "medium", Number(event.target.value))
+                                updateWalkingDistanceCharge("medium", Number(event.target.value))
                               }
                               className="mt-1"
                             />
@@ -1175,7 +1152,7 @@ export function WidgetCreator({ widgetId }: WidgetCreatorProps = {}) {
                               step="5"
                               value={config.pricing.accessibility.walkingDistance.long}
                               onChange={(event) =>
-                                updateAccessibility("walkingDistance", "long", Number(event.target.value))
+                                updateWalkingDistanceCharge("long", Number(event.target.value))
                               }
                               className="mt-1"
                             />

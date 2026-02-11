@@ -91,7 +91,7 @@ type ServiceType = "full_service" | "labor_only" | null;
 type MoveType = "home" | "storage" | "office" | null;
 type HomeSize = "studio" | "1bed" | "2bed" | "3bed" | "4bed" | "5bed" | null;
 type LaborHelpType = "loading_unloading" | "loading_only" | "unloading_only" | null;
-type TeamOptionId = "2-1" | "3-1" | "3-2" | "4-2" | "loaders-2" | "loaders-3" | null;
+type TeamOptionId = "2-1" | "3-1" | "4-1" | "4-2" | "5-2" | "loaders-2" | "loaders-3" | null;
 type TeamOptionKey = Exclude<TeamOptionId, null>;
 type StorageUnitSize = "25" | "50" | "75" | "100" | "200" | "300" | null;
 type OfficeHeadcount = "1-4" | "5-9" | "10-19" | "20-49" | "50-99" | "over-100" | null;
@@ -185,8 +185,9 @@ const LABOR_HELP_OPTIONS = [
 const TEAM_OPTIONS_MOVE = [
   { id: "2-1", title: "2 movers, 1 truck", recommended: true },
   { id: "3-1", title: "3 movers, 1 truck", recommended: false },
-  { id: "3-2", title: "3 movers, 2 trucks", recommended: false },
+  { id: "4-1", title: "4 movers, 1 truck", recommended: false },
   { id: "4-2", title: "4 movers, 2 trucks", recommended: false },
+  { id: "5-2", title: "5 movers, 2 trucks", recommended: false },
 ] as const;
 
 const TEAM_OPTIONS_LOADERS = [
@@ -206,10 +207,8 @@ const ORIGIN_ELEVATOR_OPTIONS = [
   { value: "yes", label: "Yes" },
 ];
 const ORIGIN_STAIRS_OPTIONS = [
-  { value: "none", label: "None" },
-  { value: "1-2", label: "1-2" },
-  { value: "3-4", label: "3-4" },
-  { value: "5+", label: "5+" },
+  { value: "none", label: "No" },
+  { value: "stairs", label: "Yes" },
 ];
 const ORIGIN_WALK_OPTIONS = [
   { value: "short", label: "Short walk (less than 100ft)" },
@@ -582,31 +581,53 @@ export function BookingForm({ config, isPreview = false }: BookingFormProps) {
   // Distance cost = miles * price per mile
   const distanceCost = distanceMiles * pricingConfig.pricePerMile;
 
+  // Base estimate before accessibility adjustments
+  const baseMinEstimate = minLaborCost + travelCost + distanceCost;
+  const baseMaxEstimate = maxLaborCost + travelCost + distanceCost;
+
+  // Accessibility surcharge rates are configured as percentages in pricing.
+  const originElevatorSurchargeRate =
+    originElevator === "no"
+      ? normalizeSurchargePercent(pricingConfig.accessibility.noElevatorCharge)
+      : 0;
+  const originStairsSurchargeRate =
+    originStairs !== "none"
+      ? normalizeSurchargePercent(pricingConfig.accessibility.stairsCharge)
+      : 0;
+  const destinationElevatorSurchargeRate =
+    destinationElevator === "no"
+      ? normalizeSurchargePercent(pricingConfig.accessibility.noElevatorCharge)
+      : 0;
+  const destinationStairsSurchargeRate =
+    destinationStairs !== "none"
+      ? normalizeSurchargePercent(pricingConfig.accessibility.stairsCharge)
+      : 0;
+  const accessibilitySurchargeRate =
+    originElevatorSurchargeRate +
+    originStairsSurchargeRate +
+    destinationElevatorSurchargeRate +
+    destinationStairsSurchargeRate;
+
   // Accessibility costs (origin)
-  const originElevatorCost = originElevator === "no" ? pricingConfig.accessibility.noElevatorCharge : 0;
-  const originStairsCost = originStairs !== "none"
-    ? pricingConfig.accessibility.stairsCharge[originStairs as "1-2" | "3-4" | "5+"] ?? 0
-    : 0;
   const originWalkCost = pricingConfig.accessibility.walkingDistance[originWalk as "short" | "medium" | "long"] ?? 0;
 
   // Accessibility costs (destination)
-  const destinationElevatorCost = destinationElevator === "no" ? pricingConfig.accessibility.noElevatorCharge : 0;
-  const destinationStairsCost = destinationStairs !== "none"
-    ? pricingConfig.accessibility.stairsCharge[destinationStairs as "1-2" | "3-4" | "5+"] ?? 0
-    : 0;
   const destinationWalkCost = pricingConfig.accessibility.walkingDistance[destinationWalk as "short" | "medium" | "long"] ?? 0;
 
-  // Total accessibility cost
-  const accessibilityCost =
-    originElevatorCost + originStairsCost + originWalkCost +
-    destinationElevatorCost + destinationStairsCost + destinationWalkCost;
+  // Total accessibility cost (percent surcharge + walking distance flats)
+  const walkingAccessibilityCost = originWalkCost + destinationWalkCost;
+  const accessibilityMinCost =
+    baseMinEstimate * accessibilitySurchargeRate + walkingAccessibilityCost;
+  const accessibilityMaxCost =
+    baseMaxEstimate * accessibilitySurchargeRate + walkingAccessibilityCost;
+  const accessibilityCost = accessibilityMaxCost;
 
   // Protection charge
   const protectionCost = additionalProtectionSelected ? pricingConfig.protectionCharge : 0;
 
   // Total estimates
-  const estimateMinTotal = minLaborCost + travelCost + distanceCost + accessibilityCost + protectionCost;
-  const estimateMaxTotal = maxLaborCost + travelCost + distanceCost + accessibilityCost + protectionCost;
+  const estimateMinTotal = baseMinEstimate + accessibilityMinCost + protectionCost;
+  const estimateMaxTotal = baseMaxEstimate + accessibilityMaxCost + protectionCost;
   const estimateLabel = formatEstimateRange(estimateMinTotal, estimateMaxTotal);
   const appliedPromo = promoValidation.status === "valid" ? promoValidation.promo : undefined;
   const discountedMinTotal = appliedPromo ? applyPromoDiscount(estimateMinTotal, appliedPromo) : estimateMinTotal;
@@ -619,7 +640,25 @@ export function BookingForm({ config, isPreview = false }: BookingFormProps) {
   const laborLabel = `${estimateLaborRange.minLabor}-${estimateLaborRange.maxLabor} hrs labor`;
   const travelLabel = travelHours > 0 ? `${Math.round(travelHours * 60)} min travel` : null;
   const distanceLabel = distanceMiles > 0 ? `${distanceMiles} mi` : null;
-  const accessibilityLabel = accessibilityCost > 0 ? `+${formatCurrency(accessibilityCost)} access` : null;
+  const accessibilityLabel = accessibilityMaxCost > 0
+    ? `+${formatEstimateRange(accessibilityMinCost, accessibilityMaxCost)} access`
+    : null;
+  const accessibilityBreakdownParts: string[] = [];
+  if (originElevatorSurchargeRate > 0) {
+    accessibilityBreakdownParts.push(`Origin no elevator ${formatPercent(originElevatorSurchargeRate)}`);
+  }
+  if (originStairsSurchargeRate > 0) {
+    accessibilityBreakdownParts.push(`Origin stairs ${formatPercent(originStairsSurchargeRate)}`);
+  }
+  if (destinationElevatorSurchargeRate > 0) {
+    accessibilityBreakdownParts.push(`Destination no elevator ${formatPercent(destinationElevatorSurchargeRate)}`);
+  }
+  if (destinationStairsSurchargeRate > 0) {
+    accessibilityBreakdownParts.push(`Destination stairs ${formatPercent(destinationStairsSurchargeRate)}`);
+  }
+  const accessibilityBreakdownLabel = accessibilityBreakdownParts.length > 0
+    ? accessibilityBreakdownParts.join(" + ")
+    : "No percent surcharge";
   const contactName =
     [firstNameValue, lastNameValue].filter(Boolean).join(" ").trim() || "Your move";
   const contactSummaryLine = [moveTypeSummary, phoneValue, emailValue]
@@ -1316,6 +1355,9 @@ export function BookingForm({ config, isPreview = false }: BookingFormProps) {
         travelRate: pricingConfig.travelRate,
         pricePerMile: pricingConfig.pricePerMile,
         accessibilityCost,
+        accessibilityMinCost,
+        accessibilityMaxCost,
+        accessibilitySurchargeRate,
         protectionCost,
         minLaborCost,
         maxLaborCost,
@@ -2289,7 +2331,7 @@ export function BookingForm({ config, isPreview = false }: BookingFormProps) {
                 </Select>
               </div>
               <div>
-                <Label>Flights of stairs to entrance</Label>
+                <Label>Any stairs to entrance?</Label>
                 <Select
                   value={originStairs}
                   onChange={(event) => setOriginStairs(event.target.value)}
@@ -2465,7 +2507,7 @@ export function BookingForm({ config, isPreview = false }: BookingFormProps) {
                 </Select>
               </div>
               <div>
-                <Label>Flights of stairs to entrance</Label>
+                <Label>Any stairs to entrance?</Label>
                 <Select
                   value={destinationStairs}
                   onChange={(event) => setDestinationStairs(event.target.value)}
@@ -3059,7 +3101,7 @@ export function BookingForm({ config, isPreview = false }: BookingFormProps) {
                     <div className="text-xs text-gray-500 mt-1">Original: {estimateLabel}</div>
                   )}
                   <div className="text-xs text-gray-500 mt-1">
-                    how the estimate is calculated
+                    How the estimate is calculated
                   </div>
                   <div className="text-xs text-gray-500 mt-1 flex flex-wrap gap-2">
                     <span>{laborLabel}</span>
@@ -3067,6 +3109,40 @@ export function BookingForm({ config, isPreview = false }: BookingFormProps) {
                     {distanceLabel && <span>({distanceLabel})</span>}
                     {accessibilityLabel && <span>{accessibilityLabel}</span>}
                     {distanceLoading && <span className="animate-pulse">calculating route...</span>}
+                  </div>
+                  <div className="mt-2 rounded-md border border-gray-100 bg-gray-50 p-3 text-xs text-gray-700 space-y-1">
+                    <div>
+                      Labor: {formatHoursRange(estimateLaborRange.minLabor, estimateLaborRange.maxLabor)} x {formatCurrency(selectedTeamOption.rate)}/hr = {formatEstimateRange(minLaborCost, maxLaborCost)}
+                    </div>
+                    <div>
+                      Travel: {formatNumber(travelHours)} hrs x {formatCurrency(selectedTeamOption.rate)}/hr x {formatPercent(pricingConfig.travelRate)} = {formatCurrency(travelCost)}
+                    </div>
+                    <div>
+                      Distance: {formatNumber(distanceMiles)} mi x {formatCurrency(pricingConfig.pricePerMile)}/mi = {formatCurrency(distanceCost)}
+                    </div>
+                    <div>
+                      Base subtotal = {formatEstimateRange(baseMinEstimate, baseMaxEstimate)}
+                    </div>
+                    <div>
+                      Access surcharge: {accessibilityBreakdownLabel}
+                    </div>
+                    <div>
+                      Access total: ({formatEstimateRange(baseMinEstimate, baseMaxEstimate)} x {formatPercent(accessibilitySurchargeRate)}) + walking {formatCurrency(walkingAccessibilityCost)} = {formatEstimateRange(accessibilityMinCost, accessibilityMaxCost)}
+                    </div>
+                    <div>
+                      Protection: {formatCurrency(protectionCost)}
+                    </div>
+                    <div>
+                      Subtotal before promo = {formatEstimateRange(estimateMinTotal, estimateMaxTotal)}
+                    </div>
+                    {appliedPromo && (
+                      <div>
+                        Promo {appliedPromo.code} ({formatPromoLabel(appliedPromo)}): -{formatEstimateRange(promoSavingsMin, promoSavingsMax)}
+                      </div>
+                    )}
+                    <div className="font-semibold text-gray-900">
+                      Final estimate = {finalEstimateLabel}
+                    </div>
                   </div>
                 </div>
               </div>
@@ -3863,6 +3939,32 @@ function formatEstimateRange(minValue: number, maxValue: number): string {
     return formatCurrency(maxValue);
   }
   return `${formatCurrency(minValue)}-${formatCurrency(maxValue)}`;
+}
+
+function formatNumber(value: number): string {
+  if (!Number.isFinite(value)) return "0";
+  return parseFloat(value.toFixed(2)).toString();
+}
+
+function formatHoursRange(minHours: number, maxHours: number): string {
+  if (!Number.isFinite(minHours) || !Number.isFinite(maxHours)) {
+    return "0 hrs";
+  }
+  if (Math.abs(minHours - maxHours) < 0.01) {
+    return `${formatNumber(maxHours)} hrs`;
+  }
+  return `${formatNumber(minHours)}-${formatNumber(maxHours)} hrs`;
+}
+
+function formatPercent(rate: number): string {
+  if (!Number.isFinite(rate)) return "0%";
+  const percent = parseFloat((rate * 100).toFixed(2));
+  return `${formatNumber(percent)}%`;
+}
+
+function normalizeSurchargePercent(value: number): number {
+  if (!Number.isFinite(value)) return 0;
+  return Math.max(0, value) / 100;
 }
 
 function applyPromoDiscount(total: number, promo: PromoDiscount): number {
