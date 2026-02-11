@@ -3172,6 +3172,9 @@ export function BookingForm({ config, isPreview = false }: BookingFormProps) {
                     <div className="font-semibold text-gray-900">
                       Final estimate = {finalEstimateLabel}
                     </div>
+                    <div className="pt-1 text-[11px] text-gray-500 leading-relaxed">
+                      This estimate is provided for general planning purposes. Our booking team will contact you to confirm details and ensure we accomodate your specific requirements
+                    </div>
                   </div>
                 </div>
               </div>
