@@ -585,7 +585,7 @@ export function BookingForm({ config, isPreview = false }: BookingFormProps) {
 
   // Accessibility surcharge rates are configured as percentages in pricing.
   const originElevatorSurchargeRate =
-    originElevator === "no"
+    originElevator === "yes"
       ? normalizeSurchargePercent(pricingConfig.accessibility.noElevatorCharge)
       : 0;
   const originStairsSurchargeRate =
@@ -593,7 +593,7 @@ export function BookingForm({ config, isPreview = false }: BookingFormProps) {
       ? normalizeSurchargePercent(pricingConfig.accessibility.stairsCharge)
       : 0;
   const destinationElevatorSurchargeRate =
-    destinationElevator === "no"
+    destinationElevator === "yes"
       ? normalizeSurchargePercent(pricingConfig.accessibility.noElevatorCharge)
       : 0;
   const destinationStairsSurchargeRate =
@@ -662,7 +662,7 @@ export function BookingForm({ config, isPreview = false }: BookingFormProps) {
     : null;
   const accessibilityBreakdownParts: string[] = [];
   if (originElevatorSurchargeRate > 0) {
-    accessibilityBreakdownParts.push(`Origin no elevator ${formatPercent(originElevatorSurchargeRate)}`);
+    accessibilityBreakdownParts.push(`Origin elevator ${formatPercent(originElevatorSurchargeRate)}`);
   }
   if (originStairsSurchargeRate > 0) {
     accessibilityBreakdownParts.push(`Origin stairs ${formatPercent(originStairsSurchargeRate)}`);
@@ -671,7 +671,7 @@ export function BookingForm({ config, isPreview = false }: BookingFormProps) {
     accessibilityBreakdownParts.push(`Origin walk (${originWalk}) ${formatPercent(originWalkSurchargeRate)}`);
   }
   if (destinationElevatorSurchargeRate > 0) {
-    accessibilityBreakdownParts.push(`Destination no elevator ${formatPercent(destinationElevatorSurchargeRate)}`);
+    accessibilityBreakdownParts.push(`Destination elevator ${formatPercent(destinationElevatorSurchargeRate)}`);
   }
   if (destinationStairsSurchargeRate > 0) {
     accessibilityBreakdownParts.push(`Destination stairs ${formatPercent(destinationStairsSurchargeRate)}`);
@@ -1050,6 +1050,30 @@ export function BookingForm({ config, isPreview = false }: BookingFormProps) {
   const handleConfirmOrigin = () => {
     setValue("pickupUnit", originUnit, { shouldDirty: true });
     setValue("pickupElevator", originElevator === "yes", { shouldDirty: true });
+
+    if (serviceType === "labor_only" && laborHelpType === "loading_unloading") {
+      // For labor-only load+unload, destination defaults to origin and we skip destination page.
+      setDestinationQuery(originQueryTrimmed);
+      setDestinationSuggestions([]);
+      setDestinationSuggestionsLoading(false);
+      setValue("dropoffStreet", originQueryTrimmed, { shouldDirty: true });
+      setValue("dropoffUnit", originUnit, { shouldDirty: true });
+      setValue("dropoffElevator", originElevator === "yes", { shouldDirty: true });
+
+      setShowOriginPage(false);
+      setShowOriginDetails(false);
+      setShowDestinationPage(false);
+      setShowDestinationDetails(false);
+      setShowTeamPage(true);
+      setShowUnloadingHoursPage(false);
+      setShowServicesPage(false);
+      setShowStoragePage(false);
+      setShowProtectionPage(false);
+      setShowReviewPage(false);
+      setShowNextStepsPage(false);
+      return;
+    }
+
     setShowOriginPage(false);
     setShowOriginDetails(false);
     setShowDestinationPage(true);
@@ -1098,6 +1122,21 @@ export function BookingForm({ config, isPreview = false }: BookingFormProps) {
   };
 
   const goBackToTeamPage = () => {
+    if (serviceType === "labor_only" && laborHelpType === "loading_unloading") {
+      setShowTeamPage(false);
+      setShowOriginPage(true);
+      setShowOriginDetails(false);
+      setShowDestinationPage(false);
+      setShowDestinationDetails(false);
+      setShowUnloadingHoursPage(false);
+      setShowServicesPage(false);
+      setShowStoragePage(false);
+      setShowProtectionPage(false);
+      setShowReviewPage(false);
+      setShowNextStepsPage(false);
+      return;
+    }
+
     setShowTeamPage(false);
     setShowDestinationPage(true);
     setShowDestinationDetails(false);
@@ -4022,8 +4061,8 @@ function getMoveScale(
       "50": 1,
       "75": 2,
       "100": 2,
-      "200": 3,
-      "300": 5,
+      "200": 2,
+      "300": 4,
     };
     return storageUnitSize ? storageScale[storageUnitSize] : 1;
   }

@@ -1080,7 +1080,7 @@ export function WidgetCreator({ widgetId }: WidgetCreatorProps = {}) {
 
                     <div className="space-y-4">
                       <div className="max-w-xs">
-                        <Label className="text-xs">No elevator surcharge (%)</Label>
+                        <Label className="text-xs">Elevator surcharge (%)</Label>
                         <Input
                           type="number"
                           min="0"
@@ -1092,7 +1092,7 @@ export function WidgetCreator({ widgetId }: WidgetCreatorProps = {}) {
                           className="mt-1"
                         />
                         <p className="text-xs text-gray-500 mt-1">
-                          Applied per location with no elevator
+                          Applied per location with elevator
                         </p>
                       </div>
 

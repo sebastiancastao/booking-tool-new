@@ -212,7 +212,7 @@ export interface PricingConfig {
   pricePerMile: number;
   protectionCharge: number;
   accessibility: {
-    noElevatorCharge: number; // Percentage surcharge (e.g., 10 means +10%)
+    noElevatorCharge: number; // Legacy field name; applied as elevator surcharge %
     stairsCharge: number; // Percentage surcharge when stairs are present
     walkingDistance: Record<"short" | "medium" | "long", number>; // Percentage surcharge by walk distance
   };
@@ -266,7 +266,7 @@ export const DEFAULT_PRICING_CONFIG: PricingConfig = {
   pricePerMile: 2.5, // Additional charge per mile
   protectionCharge: 15,
   accessibility: {
-    noElevatorCharge: 10, // +10% when no elevator is available (per location)
+    noElevatorCharge: 10, // +10% when elevator is available (per location)
     stairsCharge: 10,
     walkingDistance: {
       short: 0,
