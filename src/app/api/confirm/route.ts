@@ -67,6 +67,10 @@ function buildEmailText(payload: Record<string, unknown>) {
   return lines.join("\n");
 }
 
+function getErrorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : "Unknown error";
+}
+
 export async function POST(request: NextRequest) {
   const debug = process.env.DEBUG_CONFIRM === "true";
   const logDebug = (...args: unknown[]) => {
@@ -81,12 +85,8 @@ export async function POST(request: NextRequest) {
     logDebug("Form email:", payload?.form?.email);
     logDebug("Has API key:", Boolean(apiKey));
 
-    if (!apiKey) {
-      return NextResponse.json(
-        { error: "RESEND_API_KEY is not configured." },
-        { status: 500 }
-      );
-    }
+    let emailSent = false;
+    let emailError: string | null = null;
 
     const from = process.env.RESEND_FROM || "Bookings <service@furnituretaxi.site>";
     const replyTo =
@@ -105,34 +105,42 @@ export async function POST(request: NextRequest) {
       emailPayload.reply_to = replyTo;
     }
 
-    logDebug("Email from:", from);
-    logDebug("Recipients:", RECIPIENTS);
-    logDebug("Reply-to:", replyTo || "none");
-    logDebug("Email text length:", String(emailPayload.text).length);
+    if (!apiKey) {
+      emailError = "RESEND_API_KEY is not configured.";
+      logDebug("Email skipped:", emailError);
+    } else {
+      try {
+        logDebug("Email from:", from);
+        logDebug("Recipients:", RECIPIENTS);
+        logDebug("Reply-to:", replyTo || "none");
+        logDebug("Email text length:", String(emailPayload.text).length);
 
-    const resendResponse = await fetch("https://api.resend.com/emails", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(emailPayload),
-    });
+        const resendResponse = await fetch("https://api.resend.com/emails", {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${apiKey}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(emailPayload),
+        });
 
-    const responseText = await resendResponse.text();
-    logDebug("Resend status:", resendResponse.status, resendResponse.statusText);
-    if (responseText) {
-      logDebug("Resend response body:", responseText);
+        const responseText = await resendResponse.text();
+        logDebug("Resend status:", resendResponse.status, resendResponse.statusText);
+        if (responseText) {
+          logDebug("Resend response body:", responseText);
+        }
+
+        if (!resendResponse.ok) {
+          emailError = `Failed to send confirmation email: ${resendResponse.status} ${resendResponse.statusText}`;
+        } else {
+          emailSent = true;
+        }
+      } catch (emailRequestError) {
+        emailError = `Failed to send confirmation email: ${getErrorMessage(emailRequestError)}`;
+      }
     }
 
-    if (!resendResponse.ok) {
-      return NextResponse.json(
-        { error: "Failed to send confirmation email.", details: responseText },
-        { status: 500 }
-      );
-    }
-
-    // Submit to Gravity Forms (non-blocking - email was already sent)
+    // Submit to Gravity Forms independently from email so leads can still be created.
     let gravityFormsResult: GravityFormsSubmissionResult = {
       success: false,
       error: "Not attempted",
@@ -147,16 +155,20 @@ export async function POST(request: NextRequest) {
       console.error("Gravity Forms submission failed (non-critical):", gfError);
       gravityFormsResult = {
         success: false,
-        error: gfError instanceof Error ? gfError.message : "Unknown error",
+        error: getErrorMessage(gfError),
       };
     }
 
+    const success = emailSent || gravityFormsResult.success;
+
     return NextResponse.json({
-      success: true,
+      success,
+      email_sent: emailSent,
+      email_error: emailError,
       gravity_forms_submitted: gravityFormsResult.success,
       gravity_forms_data: gravityFormsResult.data || null,
       gravity_forms_error: gravityFormsResult.error || null,
-    });
+    }, { status: success ? 200 : 500 });
   } catch (error) {
     console.error("Confirmation email error:", error);
     return NextResponse.json(

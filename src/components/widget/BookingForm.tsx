@@ -116,6 +116,15 @@ type PromoDiscount = {
   discountValue: number;
 };
 
+type ConfirmApiResponse = {
+  success?: boolean;
+  error?: string;
+  email_sent?: boolean;
+  email_error?: string | null;
+  gravity_forms_submitted?: boolean;
+  gravity_forms_error?: string | null;
+};
+
 const HOME_SIZES = [
   { id: "studio", label: "Studio" },
   { id: "1bed", label: "1 Bedroom" },
@@ -236,6 +245,8 @@ export function BookingForm({ config, isPreview = false }: BookingFormProps) {
   const [unloadingHours, setUnloadingHours] = useState("2");
   const [currentStep, setCurrentStep] = useState(0);
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [isConfirming, setIsConfirming] = useState(false);
+  const [confirmationError, setConfirmationError] = useState<string | null>(null);
   const [inventory, setInventory] = useState<InventoryItem[]>([]);
   const [specialItems, setSpecialItems] = useState<SpecialItem[]>([]);
   const [customFieldValues, setCustomFieldValues] = useState<Record<string, string | boolean>>({});
@@ -1365,20 +1376,20 @@ export function BookingForm({ config, isPreview = false }: BookingFormProps) {
     setShowNextStepsPage(true);
   };
 
-    const handleReviewContinue = () => {
-      setShowReviewPage(false);
-      setShowPromoCodePage(false);
-      setShowNextStepsPage(false);
-      setCurrentStep(0);
-    };
+  const handleReviewContinue = () => {
+    setShowReviewPage(false);
+    setShowPromoCodePage(false);
+    setShowNextStepsPage(false);
+    setCurrentStep(0);
+  };
 
-    const handleConfirmReservation = async () => {
-    if (confirmationSentRef.current) {
-      setIsSubmitted(true);
+  const handleConfirmReservation = async () => {
+    if (confirmationSentRef.current || isConfirming) {
       return;
     }
 
-    confirmationSentRef.current = true;
+    setIsConfirming(true);
+    setConfirmationError(null);
 
     const formValues = getValues();
     const payload = {
@@ -1450,16 +1461,40 @@ export function BookingForm({ config, isPreview = false }: BookingFormProps) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
+      const result = (await response
+        .json()
+        .catch(() => null)) as ConfirmApiResponse | null;
 
       if (!response.ok) {
-        throw new Error("Failed to send confirmation email");
-      }
-      } catch (error) {
-        console.error("Confirmation email failed:", error);
+        const errorMessage =
+          (typeof result?.gravity_forms_error === "string" &&
+            result.gravity_forms_error.trim()) ||
+          (typeof result?.error === "string" && result.error.trim()) ||
+          "Failed to confirm reservation.";
+        throw new Error(errorMessage);
       }
 
+      if (!result?.gravity_forms_submitted) {
+        const leadError =
+          (typeof result?.gravity_forms_error === "string" &&
+            result.gravity_forms_error.trim()) ||
+          "Lead could not be created in Gravity Forms. Please try again.";
+        throw new Error(leadError);
+      }
+
+      confirmationSentRef.current = true;
       setIsSubmitted(true);
-    };
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : "Lead could not be created in Gravity Forms. Please try again.";
+      setConfirmationError(errorMessage);
+      console.error("Confirmation request failed:", error);
+    } finally {
+      setIsConfirming(false);
+    }
+  };
 
   const openStoragePage = () => {
     setStoragePageWasEnabled(storageNeeded ?? false);
@@ -3218,13 +3253,20 @@ export function BookingForm({ config, isPreview = false }: BookingFormProps) {
                 </div>
               </div>
 
+              {confirmationError && (
+                <div className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-800">
+                  {confirmationError}
+                </div>
+              )}
+
               <Button
                 type="button"
                 onClick={handleConfirmReservation}
                 style={{ backgroundColor: config.primaryColor }}
                 className="w-full text-white hover:opacity-90"
+                disabled={isConfirming}
               >
-                CONFIRM
+                {isConfirming ? "CONFIRMING..." : "CONFIRM"}
               </Button>
             </div>
           </div>
