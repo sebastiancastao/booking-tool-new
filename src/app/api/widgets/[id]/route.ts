@@ -87,7 +87,11 @@ export async function GET(
         const normalizedTeamOption =
           group === "move" && team.team_option === "3-2"
             ? "4-1"
-            : team.team_option;
+            : group === "loaders" && team.team_option === "loaders-2"
+              ? "2-1"
+              : group === "loaders" && team.team_option === "loaders-3"
+                ? "3-1"
+                : team.team_option;
         if (Object.prototype.hasOwnProperty.call(pricing.teams[group], normalizedTeamOption)) {
           pricing.teams[group][normalizedTeamOption] = {
             rate: parseFloat(team.rate),

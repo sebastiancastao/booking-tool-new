@@ -91,7 +91,7 @@ type ServiceType = "full_service" | "labor_only" | null;
 type MoveType = "home" | "storage" | "office" | null;
 type HomeSize = "studio" | "1bed" | "2bed" | "3bed" | "4bed" | "5bed" | null;
 type LaborHelpType = "loading_unloading" | "loading_only" | "unloading_only" | null;
-type TeamOptionId = "2-1" | "3-1" | "4-1" | "4-2" | "5-2" | "loaders-2" | "loaders-3" | null;
+type TeamOptionId = "1-1" | "2-1" | "3-1" | "4-1" | "4-2" | "5-2" | null;
 type TeamOptionKey = Exclude<TeamOptionId, null>;
 type StorageUnitSize = "25" | "50" | "75" | "100" | "200" | "300" | null;
 type OfficeHeadcount = "1-4" | "5-9" | "10-19" | "20-49" | "50-99" | "over-100" | null;
@@ -192,21 +192,28 @@ const LABOR_HELP_OPTIONS = [
 ];
 
 const TEAM_OPTIONS_MOVE = [
-  { id: "2-1", title: "2 movers, 1 truck", recommended: true },
-  { id: "3-1", title: "3 movers, 1 truck", recommended: false },
-  { id: "4-1", title: "4 movers, 1 truck", recommended: false },
-  { id: "4-2", title: "4 movers, 2 trucks", recommended: false },
-  { id: "5-2", title: "5 movers, 2 trucks", recommended: false },
+  { id: "1-1", title: "1 truck, 1 mover", recommended: true },
+  { id: "2-1", title: "1 truck, 2 movers", recommended: false },
+  { id: "3-1", title: "1 truck, 3 movers", recommended: false },
+  { id: "4-1", title: "1 truck, 4 movers", recommended: false },
+  { id: "4-2", title: "2 trucks, 4 movers", recommended: false },
+  { id: "5-2", title: "2 trucks, 5 movers", recommended: false },
 ] as const;
 
 const TEAM_OPTIONS_LOADERS = [
-  { id: "loaders-2", title: "2 loaders", recommended: true },
-  { id: "loaders-3", title: "3 loaders", recommended: false },
+  { id: "2-1", title: "2 men, 1 truck", recommended: true },
+  { id: "3-1", title: "3 men, 1 truck", recommended: false },
+  { id: "4-1", title: "4 men, 1 truck", recommended: false },
+  { id: "4-2", title: "4 men, 2 trucks", recommended: false },
+  { id: "5-2", title: "5 men, 2 trucks", recommended: false },
 ] as const;
 
 const TEAM_OPTIONS_UNLOADING = [
-  { id: "2-1", title: "2 movers, 1 truck", recommended: false },
-  { id: "3-1", title: "3 movers, 1 truck", recommended: false },
+  { id: "2-1", title: "2 men, 1 truck", recommended: false },
+  { id: "3-1", title: "3 men, 1 truck", recommended: false },
+  { id: "4-1", title: "4 men, 1 truck", recommended: false },
+  { id: "4-2", title: "4 men, 2 trucks", recommended: false },
+  { id: "5-2", title: "5 men, 2 trucks", recommended: false },
 ] as const;
 
 const UNLOADING_HOURS_OPTIONS = ["2", "3", "4"];
@@ -4065,17 +4072,26 @@ function getRecommendedTeamOptionId({
   const scale = getMoveScale(moveType, homeSize, storageUnitSize, officeHeadcount);
 
   if (serviceType === "labor_only" && laborHelpType === "loading_only") {
-    return scale >= 3 ? "loaders-3" : "loaders-2";
+    if (scale <= 1) return "2-1";
+    if (scale === 2) return "3-1";
+    if (scale === 3) return "4-1";
+    if (scale === 4) return "4-2";
+    return "5-2";
   }
 
   if (serviceType === "labor_only" && laborHelpType === "unloading_only") {
-    return scale >= 3 ? "3-1" : "2-1";
+    if (scale <= 1) return "2-1";
+    if (scale === 2) return "3-1";
+    if (scale === 3) return "4-1";
+    if (scale === 4) return "4-2";
+    return "5-2";
   }
 
-  if (scale <= 1) return "2-1";
-  if (scale === 2) return "3-1";
-  if (scale === 3) return "4-1";
+  if (scale <= 1) return "1-1";
+  if (scale === 2) return "2-1";
+  if (scale === 3) return "3-1";
   if (scale === 4) return "4-2";
+  if (scale === 5) return "5-2";
   return "5-2";
 }
 

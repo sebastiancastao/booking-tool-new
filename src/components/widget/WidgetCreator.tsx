@@ -41,21 +41,28 @@ const FONT_OPTIONS = [
 ];
 
 const MOVE_TEAM_OPTIONS = [
-  { id: "2-1", label: "2 movers, 1 truck" },
-  { id: "3-1", label: "3 movers, 1 truck" },
-  { id: "4-1", label: "4 movers, 1 truck" },
-  { id: "4-2", label: "4 movers, 2 trucks" },
-  { id: "5-2", label: "5 movers, 2 trucks" },
+  { id: "1-1", label: "1 truck, 1 mover" },
+  { id: "2-1", label: "1 truck, 2 movers" },
+  { id: "3-1", label: "1 truck, 3 movers" },
+  { id: "4-1", label: "1 truck, 4 movers" },
+  { id: "4-2", label: "2 trucks, 4 movers" },
+  { id: "5-2", label: "2 trucks, 5 movers" },
 ] as const;
 
 const LOADER_TEAM_OPTIONS = [
-  { id: "loaders-2", label: "2 loaders" },
-  { id: "loaders-3", label: "3 loaders" },
+  { id: "2-1", label: "2 men, 1 truck" },
+  { id: "3-1", label: "3 men, 1 truck" },
+  { id: "4-1", label: "4 men, 1 truck" },
+  { id: "4-2", label: "4 men, 2 trucks" },
+  { id: "5-2", label: "5 men, 2 trucks" },
 ] as const;
 
 const UNLOADING_TEAM_OPTIONS = [
-  { id: "2-1", label: "2 movers, 1 truck" },
-  { id: "3-1", label: "3 movers, 1 truck" },
+  { id: "2-1", label: "2 men, 1 truck" },
+  { id: "3-1", label: "3 men, 1 truck" },
+  { id: "4-1", label: "4 men, 1 truck" },
+  { id: "4-2", label: "4 men, 2 trucks" },
+  { id: "5-2", label: "5 men, 2 trucks" },
 ] as const;
 
 const HOME_ESTIMATE_OPTIONS = [
@@ -708,6 +715,9 @@ export function WidgetCreator({ widgetId }: WidgetCreatorProps = {}) {
                               </div>
                             );
                           })}
+                          <p className="text-xs text-gray-500">
+                            Any more trucks or movers: $40 per additional truck or mover.
+                          </p>
                         </div>
                       </div>
 

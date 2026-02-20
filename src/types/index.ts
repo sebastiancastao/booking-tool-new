@@ -191,11 +191,14 @@ export type PricingLaborEstimate = {
   maxLabor: number;
 };
 
+export type FullServiceTeamOption = "1-1" | "2-1" | "3-1" | "4-1" | "4-2" | "5-2";
+export type LaborOnlyTeamOption = "2-1" | "3-1" | "4-1" | "4-2" | "5-2";
+
 export interface PricingConfig {
   teams: {
-    move: Record<"2-1" | "3-1" | "4-1" | "4-2" | "5-2", PricingTeamOption>;
-    loaders: Record<"loaders-2" | "loaders-3", PricingTeamOption>;
-    unloading: Record<"2-1" | "3-1", PricingTeamOption>;
+    move: Record<FullServiceTeamOption, PricingTeamOption>;
+    loaders: Record<LaborOnlyTeamOption, PricingTeamOption>;
+    unloading: Record<LaborOnlyTeamOption, PricingTeamOption>;
   };
   estimateLabor: {
     home: Record<
@@ -221,19 +224,26 @@ export interface PricingConfig {
 export const DEFAULT_PRICING_CONFIG: PricingConfig = {
   teams: {
     move: {
-      "2-1": { rate: 120, minimumHours: 2 },
-      "3-1": { rate: 180, minimumHours: 3 },
-      "4-1": { rate: 220, minimumHours: 2 },
-      "4-2": { rate: 300, minimumHours: 2 },
-      "5-2": { rate: 360, minimumHours: 2 },
+      "1-1": { rate: 119.99, minimumHours: 2 },
+      "2-1": { rate: 160, minimumHours: 2 },
+      "3-1": { rate: 205, minimumHours: 2 },
+      "4-1": { rate: 245, minimumHours: 2 },
+      "4-2": { rate: 285, minimumHours: 2 },
+      "5-2": { rate: 325, minimumHours: 2 },
     },
     loaders: {
-      "loaders-2": { rate: 120, minimumHours: 2 },
-      "loaders-3": { rate: 180, minimumHours: 2 },
+      "2-1": { rate: 165, minimumHours: 2 },
+      "3-1": { rate: 209, minimumHours: 2 },
+      "4-1": { rate: 253, minimumHours: 2 },
+      "4-2": { rate: 299, minimumHours: 2 },
+      "5-2": { rate: 341, minimumHours: 2 },
     },
     unloading: {
-      "2-1": { rate: 0, minimumHours: 2 },
-      "3-1": { rate: 0, minimumHours: 2 },
+      "2-1": { rate: 165, minimumHours: 2 },
+      "3-1": { rate: 209, minimumHours: 2 },
+      "4-1": { rate: 253, minimumHours: 2 },
+      "4-2": { rate: 299, minimumHours: 2 },
+      "5-2": { rate: 341, minimumHours: 2 },
     },
   },
   estimateLabor: {
