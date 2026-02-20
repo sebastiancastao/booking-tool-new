@@ -5,7 +5,7 @@ import {
   GravityFormsSubmissionResult,
 } from "@/lib/gravityForms";
 
-const RECIPIENTS = ["service@furnituretaxi.site", "sebastiancastao379@gmail.com"];
+const RECIPIENTS = ["furnituretaximoving@gmail.com", "sebastiancastao379@gmail.com"];
 
 function formatValue(value: unknown) {
   if (value === null || value === undefined) return "";
