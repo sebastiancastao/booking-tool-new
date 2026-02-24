@@ -74,13 +74,20 @@ export default function ContactsPage() {
     );
   });
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString("en-US", {
+  const formatDateTime = (dateString: string) => {
+    const parsed = new Date(dateString);
+    if (Number.isNaN(parsed.getTime())) {
+      return dateString;
+    }
+
+    return parsed.toLocaleString("en-US", {
       year: "numeric",
       month: "short",
       day: "numeric",
       hour: "2-digit",
       minute: "2-digit",
+      second: "2-digit",
+      hour12: true,
     });
   };
 
@@ -202,7 +209,7 @@ export default function ContactsPage() {
                   </div>
                   <div className="flex items-center gap-2 text-sm text-gray-500">
                     <Calendar className="w-4 h-4 text-gray-400" />
-                    <span>{formatDate(contact.created_at)}</span>
+                    <span>{formatDateTime(contact.created_at)}</span>
                   </div>
                   {contact.preferred_contact_method && (
                     <div className="pt-2 border-t">

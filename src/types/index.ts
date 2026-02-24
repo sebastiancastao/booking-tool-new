@@ -191,7 +191,7 @@ export type PricingLaborEstimate = {
   maxLabor: number;
 };
 
-export type FullServiceTeamOption = "1-1" | "2-1" | "3-1" | "4-1" | "4-2" | "5-2";
+export type FullServiceTeamOption = "2-1" | "3-1" | "4-1" | "4-2" | "5-2";
 export type LaborOnlyTeamOption = "2-1" | "3-1" | "4-1" | "4-2" | "5-2";
 
 export interface PricingConfig {
@@ -224,12 +224,11 @@ export interface PricingConfig {
 export const DEFAULT_PRICING_CONFIG: PricingConfig = {
   teams: {
     move: {
-      "1-1": { rate: 119.99, minimumHours: 2 },
-      "2-1": { rate: 160, minimumHours: 2 },
-      "3-1": { rate: 205, minimumHours: 2 },
-      "4-1": { rate: 245, minimumHours: 2 },
-      "4-2": { rate: 285, minimumHours: 2 },
-      "5-2": { rate: 325, minimumHours: 2 },
+      "2-1": { rate: 165, minimumHours: 2 },
+      "3-1": { rate: 209, minimumHours: 2 },
+      "4-1": { rate: 253, minimumHours: 2 },
+      "4-2": { rate: 299, minimumHours: 2 },
+      "5-2": { rate: 341, minimumHours: 2 },
     },
     loaders: {
       "2-1": { rate: 165, minimumHours: 2 },

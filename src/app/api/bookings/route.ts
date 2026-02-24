@@ -1,6 +1,45 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 
+function normalizeSubmittedAt(value: unknown): string {
+  if (typeof value !== "string") {
+    return new Date().toISOString();
+  }
+
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) {
+    return new Date().toISOString();
+  }
+
+  return parsed.toISOString();
+}
+
+function toTimeOnly(isoDateTime: string): string {
+  const timePart = isoDateTime.split("T")[1] ?? "";
+  const hhmmss = timePart.slice(0, 8);
+  return /^\d{2}:\d{2}:\d{2}$/.test(hhmmss) ? hhmmss : "00:00:00";
+}
+
+function shouldRetryWithTime(error: unknown): boolean {
+  if (!error || typeof error !== "object") return false;
+  const maybeCode = "code" in error ? error.code : null;
+  const maybeMessage = "message" in error ? error.message : null;
+  const code = typeof maybeCode === "string" ? maybeCode : "";
+  const message = typeof maybeMessage === "string" ? maybeMessage.toLowerCase() : "";
+
+  return code === "22007" && message.includes("type time");
+}
+
+function shouldRetryWithoutDate(error: unknown): boolean {
+  if (!error || typeof error !== "object") return false;
+  const maybeCode = "code" in error ? error.code : null;
+  const maybeMessage = "message" in error ? error.message : null;
+  const code = typeof maybeCode === "string" ? maybeCode : "";
+  const message = typeof maybeMessage === "string" ? maybeMessage.toLowerCase() : "";
+
+  return code === "42703" && message.includes("date");
+}
+
 // Helper function to upsert contact and return contact_id
 async function upsertContact(
   supabase: Awaited<ReturnType<typeof createClient>>,
@@ -8,8 +47,12 @@ async function upsertContact(
   firstName: string,
   lastName: string,
   email: string,
-  phone: string
+  phone: string,
+  submittedAt: string,
+  submittedDate: string
 ): Promise<string | null> {
+  const submittedTime = toTimeOnly(submittedAt);
+
   // Check if contact exists
   const { data: existingContact } = await supabase
     .from("contacts")
@@ -20,18 +63,59 @@ async function upsertContact(
 
   if (existingContact) {
     // Update existing contact
-    await supabase
+    let { error: updateError } = await supabase
       .from("contacts")
       .update({
         first_name: firstName,
         last_name: lastName,
         phone: phone,
+        date: submittedDate,
+        updated_at: submittedAt,
       })
       .eq("id", existingContact.id);
+
+    if (updateError && shouldRetryWithTime(updateError)) {
+      console.warn(
+        "Retrying booking contact upsert using time value for contacts.date:",
+        updateError
+      );
+      const retryWithTime = await supabase
+        .from("contacts")
+        .update({
+          first_name: firstName,
+          last_name: lastName,
+          phone: phone,
+          date: submittedTime,
+          updated_at: submittedAt,
+        })
+        .eq("id", existingContact.id);
+      updateError = retryWithTime.error;
+    }
+
+    if (updateError && shouldRetryWithoutDate(updateError)) {
+      console.warn(
+        "Retrying booking contact upsert without date column due schema mismatch:",
+        updateError
+      );
+      const retry = await supabase
+        .from("contacts")
+        .update({
+          first_name: firstName,
+          last_name: lastName,
+          phone: phone,
+          updated_at: submittedAt,
+        })
+        .eq("id", existingContact.id);
+      updateError = retry.error;
+    }
+
+    if (updateError) {
+      console.error("Error updating contact:", updateError);
+    }
     return existingContact.id;
   } else {
     // Create new contact
-    const { data: newContact, error } = await supabase
+    let { data: newContact, error } = await supabase
       .from("contacts")
       .insert({
         widget_id: widgetId,
@@ -40,9 +124,59 @@ async function upsertContact(
         email: email,
         phone: phone,
         source: "booking_form",
+        date: submittedDate,
+        created_at: submittedAt,
+        updated_at: submittedAt,
       })
       .select("id")
       .single();
+
+    if (error && shouldRetryWithTime(error)) {
+      console.warn(
+        "Retrying booking contact insert using time value for contacts.date:",
+        error
+      );
+      const retryWithTime = await supabase
+        .from("contacts")
+        .insert({
+          widget_id: widgetId,
+          first_name: firstName,
+          last_name: lastName,
+          email: email,
+          phone: phone,
+          source: "booking_form",
+          date: submittedTime,
+          created_at: submittedAt,
+          updated_at: submittedAt,
+        })
+        .select("id")
+        .single();
+      newContact = retryWithTime.data;
+      error = retryWithTime.error;
+    }
+
+    if (error && shouldRetryWithoutDate(error)) {
+      console.warn(
+        "Retrying booking contact insert without date column due schema mismatch:",
+        error
+      );
+      const retry = await supabase
+        .from("contacts")
+        .insert({
+          widget_id: widgetId,
+          first_name: firstName,
+          last_name: lastName,
+          email: email,
+          phone: phone,
+          source: "booking_form",
+          created_at: submittedAt,
+          updated_at: submittedAt,
+        })
+        .select("id")
+        .single();
+      newContact = retry.data;
+      error = retry.error;
+    }
 
     if (error) {
       console.error("Error creating contact:", error);
@@ -55,6 +189,8 @@ async function upsertContact(
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
+    const submittedAt = normalizeSubmittedAt(body.submittedAt);
+    const submittedDate = submittedAt.split("T")[0];
 
     // Validate required fields
     const requiredFields = [
@@ -100,7 +236,9 @@ export async function POST(request: NextRequest) {
       body.firstName,
       body.lastName,
       body.email,
-      body.phone
+      body.phone,
+      submittedAt,
+      submittedDate
     );
 
     const { data, error } = await supabase.from("bookings").insert({
