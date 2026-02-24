@@ -2309,7 +2309,7 @@ export function BookingForm({ config, isPreview = false }: BookingFormProps) {
   // Page 8: Origin Location
   if (showOriginPage) {
     return (
-      <div className="py-4">
+      <div className={showOriginDetails ? "py-2" : "py-4"}>
         {!showOriginDetails ? (
           <>
             {/* Header with back button and progress */}
@@ -2382,7 +2382,7 @@ export function BookingForm({ config, isPreview = false }: BookingFormProps) {
           </>
         ) : (
           <>
-            <div className="flex items-center justify-between pb-3 mb-4 border-b">
+            <div className="flex items-center justify-between pb-1 mb-2 border-b">
               <span className="text-sm font-semibold text-gray-900">
                 Origin location details
               </span>
@@ -2395,12 +2395,12 @@ export function BookingForm({ config, isPreview = false }: BookingFormProps) {
               </button>
             </div>
 
-            <div className="flex items-center gap-2 py-3 border-b border-gray-100 text-sm text-gray-700">
+            <div className="flex items-center gap-2 py-1.5 border-b border-gray-100 text-sm text-gray-700">
               <MapPin className="w-4 h-4" style={{ color: config.primaryColor }} />
               <span>{originLabel}</span>
             </div>
 
-            <div className="h-36 rounded-md border border-gray-100 overflow-hidden bg-gray-100 my-4">
+            <div className="h-20 sm:h-24 rounded-md border border-gray-100 overflow-hidden bg-gray-100 my-2">
               {originMapPreviewUrl ? (
                 <img
                   src={originMapPreviewUrl}
@@ -2415,13 +2415,13 @@ export function BookingForm({ config, isPreview = false }: BookingFormProps) {
               )}
             </div>
 
-            <div className="space-y-4">
-              <div>
+            <div className="grid gap-2 sm:grid-cols-2">
+              <div className="sm:col-span-2">
                 <Label>Building / apartment number</Label>
                 <Input
                   value={originUnit}
                   onChange={(event) => setOriginUnit(event.target.value)}
-                  className="mt-1"
+                  className="mt-1 h-8 py-1 text-sm"
                 />
               </div>
               <div>
@@ -2429,7 +2429,7 @@ export function BookingForm({ config, isPreview = false }: BookingFormProps) {
                 <Select
                   value={originElevator}
                   onChange={(event) => setOriginElevator(event.target.value)}
-                  className="mt-1"
+                  className="mt-1 h-8 py-1 text-sm"
                 >
                   {ORIGIN_ELEVATOR_OPTIONS.map((option) => (
                     <option key={option.value} value={option.value}>
@@ -2443,7 +2443,7 @@ export function BookingForm({ config, isPreview = false }: BookingFormProps) {
                 <Select
                   value={originStairs}
                   onChange={(event) => setOriginStairs(event.target.value)}
-                  className="mt-1"
+                  className="mt-1 h-8 py-1 text-sm"
                 >
                   {ORIGIN_STAIRS_OPTIONS.map((option) => (
                     <option key={option.value} value={option.value}>
@@ -2452,12 +2452,12 @@ export function BookingForm({ config, isPreview = false }: BookingFormProps) {
                   ))}
                 </Select>
               </div>
-              <div>
+              <div className="sm:col-span-2">
                 <Label>Walking distance from parking to entrance:</Label>
                 <Select
                   value={originWalk}
                   onChange={(event) => setOriginWalk(event.target.value)}
-                  className="mt-1"
+                  className="mt-1 h-8 py-1 text-sm"
                 >
                   {ORIGIN_WALK_OPTIONS.map((option) => (
                     <option key={option.value} value={option.value}>
@@ -2472,7 +2472,8 @@ export function BookingForm({ config, isPreview = false }: BookingFormProps) {
               type="button"
               onClick={handleConfirmOrigin}
               style={{ backgroundColor: config.primaryColor }}
-              className="w-full text-white hover:opacity-90 mt-6"
+              size="sm"
+              className="w-full text-white hover:opacity-90 mt-3"
             >
               CONFIRM ORIGIN LOCATION
             </Button>
@@ -2485,7 +2486,7 @@ export function BookingForm({ config, isPreview = false }: BookingFormProps) {
   // Page 9: Destination Location
   if (showDestinationPage) {
     return (
-      <div className="py-4">
+      <div className={showDestinationDetails ? "py-2" : "py-4"}>
         {!showDestinationDetails ? (
           <>
             {/* Header with back button and progress */}
@@ -2558,7 +2559,7 @@ export function BookingForm({ config, isPreview = false }: BookingFormProps) {
           </>
         ) : (
           <>
-            <div className="flex items-center justify-between pb-3 mb-4 border-b">
+            <div className="flex items-center justify-between pb-1 mb-2 border-b">
               <span className="text-sm font-semibold text-gray-900">
                 Destination location details
               </span>
@@ -2571,12 +2572,12 @@ export function BookingForm({ config, isPreview = false }: BookingFormProps) {
               </button>
             </div>
 
-            <div className="flex items-center gap-2 py-3 border-b border-gray-100 text-sm text-gray-700">
+            <div className="flex items-center gap-2 py-1.5 border-b border-gray-100 text-sm text-gray-700">
               <MapPin className="w-4 h-4" style={{ color: config.primaryColor }} />
               <span>{destinationLabel}</span>
             </div>
 
-            <div className="h-36 rounded-md border border-gray-100 overflow-hidden bg-gray-100 my-4">
+            <div className="h-20 sm:h-24 rounded-md border border-gray-100 overflow-hidden bg-gray-100 my-2">
               {destinationMapPreviewUrl ? (
                 <img
                   src={destinationMapPreviewUrl}
@@ -2591,13 +2592,13 @@ export function BookingForm({ config, isPreview = false }: BookingFormProps) {
               )}
             </div>
 
-            <div className="space-y-4">
-              <div>
+            <div className="grid gap-2 sm:grid-cols-2">
+              <div className="sm:col-span-2">
                 <Label>Building / apartment number</Label>
                 <Input
                   value={destinationUnit}
                   onChange={(event) => setDestinationUnit(event.target.value)}
-                  className="mt-1"
+                  className="mt-1 h-8 py-1 text-sm"
                 />
               </div>
               <div>
@@ -2605,7 +2606,7 @@ export function BookingForm({ config, isPreview = false }: BookingFormProps) {
                 <Select
                   value={destinationElevator}
                   onChange={(event) => setDestinationElevator(event.target.value)}
-                  className="mt-1"
+                  className="mt-1 h-8 py-1 text-sm"
                 >
                   {ORIGIN_ELEVATOR_OPTIONS.map((option) => (
                     <option key={option.value} value={option.value}>
@@ -2619,7 +2620,7 @@ export function BookingForm({ config, isPreview = false }: BookingFormProps) {
                 <Select
                   value={destinationStairs}
                   onChange={(event) => setDestinationStairs(event.target.value)}
-                  className="mt-1"
+                  className="mt-1 h-8 py-1 text-sm"
                 >
                   {ORIGIN_STAIRS_OPTIONS.map((option) => (
                     <option key={option.value} value={option.value}>
@@ -2628,12 +2629,12 @@ export function BookingForm({ config, isPreview = false }: BookingFormProps) {
                   ))}
                 </Select>
               </div>
-              <div>
+              <div className="sm:col-span-2">
                 <Label>Walking distance from parking to entrance:</Label>
                 <Select
                   value={destinationWalk}
                   onChange={(event) => setDestinationWalk(event.target.value)}
-                  className="mt-1"
+                  className="mt-1 h-8 py-1 text-sm"
                 >
                   {ORIGIN_WALK_OPTIONS.map((option) => (
                     <option key={option.value} value={option.value}>
@@ -2648,7 +2649,8 @@ export function BookingForm({ config, isPreview = false }: BookingFormProps) {
               type="button"
               onClick={handleConfirmDestination}
               style={{ backgroundColor: config.primaryColor }}
-              className="w-full text-white hover:opacity-90 mt-6"
+              size="sm"
+              className="w-full text-white hover:opacity-90 mt-3"
             >
               CONFIRM DESTINATION LOCATION
             </Button>
@@ -2690,6 +2692,7 @@ export function BookingForm({ config, isPreview = false }: BookingFormProps) {
 
         {/* Question */}
         <h2 className="text-xl text-gray-700 mt-8 mb-6">Select team</h2>
+        <p className="text-sm text-gray-500 mb-4">Discounts can be applied at booking</p>
 
         <div className="space-y-1">
           {teamOptions.map((option) => (
